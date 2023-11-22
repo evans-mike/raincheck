@@ -1,2 +1,4 @@
 forecast.json
 points.json
+geocodes.json
+.env
