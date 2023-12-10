@@ -1,12 +1,12 @@
 import requests
 import json
-import os
-from dotenv import load_dotenv
+# import os
+from fastapi import FastAPI
+from dotenv import dotenv_values
 import urllib.parse
 from functools import lru_cache 
 import redis
 import dateutil.parser
-import datetime
 
 
 def write_local_file(filename, dictionary):
@@ -25,7 +25,7 @@ def get_lat_lon_for_address(address_string):
     
     address_encoded = urllib.parse.quote_plus(address_string)
 
-    r = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={address_encoded}&key={GOOGLE_API_KEY}')
+    r = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={address_encoded}&key={config["GOOGLE_API_KEY"]}')
 
     write_local_file("geocodes", r.json())
     
@@ -78,13 +78,9 @@ def get_forecast_for_period(whole_forecast: dict, event_time) -> dict:
 
 if __name__ == '__main__':
     
-    load_dotenv()
-    GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-    REDIS_HOST = os.getenv('REDIS_HOST')
-    REDIS_PORT = os.getenv('REDIS_PORT')
-    REDIS_DB = os.getenv('REDIS_DB')
+    config = dotenv_values(".env")
 
-    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+    # r = redis.Redis(host=config["REDIS_HOST"], port=config["REDIS_PORT"], db=config["REDIS_DB"])
 
     lat, lon = get_lat_lon_for_address('8203 Metcalf Drive Richmond VA 23227')
     gridId, gridX, gridY = get_gridpoints_by_lat_lon(lat, lon)
