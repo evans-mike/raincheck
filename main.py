@@ -1,12 +1,15 @@
 import requests
 import json
-# import os
 from fastapi import FastAPI
 from dotenv import dotenv_values
 import urllib.parse
 from functools import lru_cache 
 import redis
 import dateutil.parser
+from pymongo import MongoClient
+from contextlib import asynccontextmanager
+
+from routes import router
 
 
 def write_local_file(filename, dictionary):
@@ -35,7 +38,7 @@ def get_lat_lon_for_address(address_string):
     return lat, lon
 
 
-# @lru_cache
+@lru_cache
 def get_gridpoints_by_lat_lon(lat, lon) -> str:
     r = requests.get(f'https://api.weather.gov/points/{lat},{lon}')
 
@@ -48,7 +51,6 @@ def get_gridpoints_by_lat_lon(lat, lon) -> str:
     return gridId, gridX, gridY
 
 
-# @lru_cache
 def get_whole_forecast(gridId, gridX, gridY) -> dict:
     r = requests.get(f'https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast')
 
@@ -74,18 +76,39 @@ def get_forecast_for_period(whole_forecast: dict, event_time) -> dict:
 
 # def set_alert():
 
-# def 
 
-if __name__ == '__main__':
-    
-    config = dotenv_values(".env")
+config = dotenv_values(".env")
+
+def startup_db_client():
+    app.mongodb_client = MongoClient(config["ATLAS_URI"])
+    app.database = app.mongodb_client[config["DB_NAME"]]
+    print("Connected to the MongoDB database!")
+
+def shutdown_db_client():
+    app.mongodb_client.close()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    #(deprecated) @app.on_event("startup")
+    startup_db_client()
+    yield
+    # (deprecated) @app.on_event("shutdown")
+    shutdown_db_client()
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(router, tags=["locations"], prefix="/location")
+
+
+# if __name__ == '__main__':
 
     # r = redis.Redis(host=config["REDIS_HOST"], port=config["REDIS_PORT"], db=config["REDIS_DB"])
 
-    lat, lon = get_lat_lon_for_address('8203 Metcalf Drive Richmond VA 23227')
-    gridId, gridX, gridY = get_gridpoints_by_lat_lon(lat, lon)
-    whole_forecast = get_whole_forecast(gridId, gridX, gridY)
-    event_time = '2023-12-01T11:30:00-05:00'
-    period_forecast = get_forecast_for_period(whole_forecast, event_time)
-    print(period_forecast)
+    # lat, lon = get_lat_lon_for_address('123 E Main StLouisville, KY 40202')
+    # gridId, gridX, gridY = get_gridpoints_by_lat_lon(lat, lon)
+    # whole_forecast = get_whole_forecast(gridId, gridX, gridY)
+    # event_time = '2023-12-01T11:30:00-05:00'
+    # period_forecast = get_forecast_for_period(whole_forecast, event_time)
+    # print(period_forecast)
 
