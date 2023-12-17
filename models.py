@@ -10,21 +10,7 @@ from dotenv import dotenv_values
 config = dotenv_values(".env")
 
 
-class Event(BaseModel):
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
-
-    class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
-            "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e"
-            }
-        }
-
-
 class Time(BaseModel):
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
-    eventId: str = Field(...)
     startDateTime: str = Field(...)
     endDateTime: str = Field(...)
 
@@ -39,23 +25,8 @@ class Time(BaseModel):
             }
         }
 
-class TimeUpdate(Time):
-    startDateTime: str = Field(...)
-    endDateTime: str = Field(...)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-                "eventId": "166de609-b04a-4b30-b46c-32537c7f1f6f",
-                "startDateTime": "2023-12-11T06:00:00-05:00",
-                "endDateTime": "2023-12-12T06:00:00-05:00"
-            }
-        }
 
 class Place(BaseModel):
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
-    eventId: str = Field(...)
     address: str = Field(...)
     lat: float = Field(...)
     lon: float = Field(...)
@@ -101,32 +72,8 @@ class Place(BaseModel):
 
         return gridId, gridX, gridY
 
-class PlaceUpdate(Place):
-    address: Optional[str]
-    lat: Optional[float]
-    lon: Optional[float]
-    gridId: Optional[str]
-    gridX: Optional[int]
-    gridY: Optional[int]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-                "eventId": "166de609-b04a-4b30-b46c-32537c7f1f6f",
-                "address": "123 E Main StLouisville, KY 40202",
-                "lat": "-85.7501",
-                "lon": "38.2564",
-                "gridId": "LMK",
-                "gridX": "50",
-                "gridY": "78"
-            }
-        }
-
 
 class Subscriber(BaseModel):
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
-    eventId: str = Field(...)
     email: str = Field(...)
     phone: str = Field(...)
 
@@ -141,20 +88,68 @@ class Subscriber(BaseModel):
             }
         }
 
-class SubscriberUpdate(Subscriber):
-    address: Optional[str]
-    email: Optional[str]
-    phone: Optional[str]
+
+class Forecast(BaseModel):
+
+    class Config:
+        allow_population_by_field_name = True
+        schema_extra = {
+            "example": {
+                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6f"
+            }
+        }
+
+    def get_whole_forecast(gridId, gridX, gridY) -> dict:
+        r = requests.get(f'https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast')
+
+        forecast = r.json()['properties']['periods']
+
+        return forecast
+
+
+    def get_forecast_for_period(whole_forecast: dict, event_time) -> dict:
+
+    
+        event_time = dateutil.parser.parse(event_time)
+        for period_forecast in whole_forecast:
+            start_time = dateutil.parser.parse(period_forecast['startTime'])
+            end_time = dateutil.parser.parse(period_forecast['endTime'])
+
+            if event_time >= start_time and event_time <= end_time:
+                # condition met
+                break
+
+        return period_forecast
+
+
+# TODO: add Notification model to extent Subscriber model
+
+class Event(BaseModel):
+    id: str = Field(default_factory=uuid.uuid4, alias="_id")
+
+    class Config:
+        allow_population_by_field_name = True
+        schema_extra = {
+            "example": {
+                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e"
+            }
+        }
+
+
+class EventUpdate(Event):
+    time: Time
+    place: Place
+    subscriber: Subscriber
+    forecast: Forecast
+    
 
     class Config:
         schema_extra = {
             "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6f",
-                "email": "someperson@somedomain.com",
-                "phone": "+11234567890"
+                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
+                "time": "{...}",
+                "place": "{...}",
+                "forecast": "{...}",
+                "subscriber": "{...}"
             }
         }
-
-# TODO: add Forecast, ForecastUpdate model including webhooks
-
-# TODO: add Notification model
