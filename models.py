@@ -12,14 +12,12 @@ config = dotenv_values(".env")
 
 class Time(BaseModel):
     startDateTime: str = Field(...)
-    endDateTime: str = Field(...)
+    # endDateTime: Optional[str] = Field(...)
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-                "eventId": "166de609-b04a-4b30-b46c-32537c7f1f6f",
                 "startDateTime": "2023-12-11T06:00:00-05:00",
                 "endDateTime": "..."
             }
@@ -28,18 +26,16 @@ class Time(BaseModel):
 
 class Place(BaseModel):
     address: str = Field(...)
-    lat: float = Field(...)
-    lon: float = Field(...)
-    gridId: str = Field(...)
-    gridX: int = Field(...)
-    gridY: int = Field(...)
+    # lat: Optional[float] = Field(...)
+    # lon: Optional[float] = Field(...)
+    # gridId: Optional[str] = Field(...)
+    # gridX: Optional[int] = Field(...)
+    # gridY: Optional[int] = Field(...)
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-                "eventId": "166de609-b04a-4b30-b46c-32537c7f1f6f",
                 "address": "123 E Main StLouisville, KY 40202",
                 "lat": "...",
                 "lon": "...",
@@ -74,15 +70,13 @@ class Place(BaseModel):
 
 
 class Subscriber(BaseModel):
-    email: str = Field(...)
+    # email: Optional[str] = Field(...)
     phone: str = Field(...)
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6f",
-                "eventId": "166de609-b04a-4b30-b46c-32537c7f1f6f",
                 "email": "someperson@somedomain.com",
                 "phone": "..."
             }
@@ -92,26 +86,28 @@ class Subscriber(BaseModel):
 class Forecast(BaseModel):
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6f"
             }
         }
 
-    def get_whole_forecast(gridId, gridX, gridY) -> dict:
-        r = requests.get(f'https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast')
+    # def get_whole_forecast(gridId, gridX, gridY) -> dict:
+    #     r = requests.get(f'https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast')
+
+    #     forecast = r.json()['properties']['periods']
+
+    #     return forecast
+
+
+    def get_forecast_for_time_and_place(gridId, gridX, gridY, event_time) -> dict:
+
+        r = requests.get(f'https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast/hourly')
 
         forecast = r.json()['properties']['periods']
-
-        return forecast
-
-
-    def get_forecast_for_period(whole_forecast: dict, event_time) -> dict:
-
     
         event_time = dateutil.parser.parse(event_time)
-        for period_forecast in whole_forecast:
+        for period_forecast in forecast:
             start_time = dateutil.parser.parse(period_forecast['startTime'])
             end_time = dateutil.parser.parse(period_forecast['endTime'])
 
@@ -125,11 +121,13 @@ class Forecast(BaseModel):
 # TODO: add Notification model to extent Subscriber model
 
 class Event(BaseModel):
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
+    id: Optional[str] = Field(default_factory=uuid.uuid4, alias="_id")
+    time: Time
+    place: Place
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e"
             }
@@ -144,7 +142,7 @@ class EventUpdate(Event):
     
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
                 "time": "{...}",

@@ -2,7 +2,6 @@
 import json
 from fastapi import FastAPI
 from dotenv import dotenv_values
-import redis
 from pymongo import MongoClient
 from contextlib import asynccontextmanager
 
@@ -23,10 +22,8 @@ def shutdown_db_client():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    #(deprecated) @app.on_event("startup")
     startup_db_client()
     yield
-    # (deprecated) @app.on_event("shutdown")
     shutdown_db_client()
 
 
