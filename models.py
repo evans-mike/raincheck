@@ -9,6 +9,13 @@ from dotenv import dotenv_values
 
 config = dotenv_values(".env")
 
+class User(BaseModel):
+    username: str
+    # email: str | None = None
+    # full_name: str | None = None
+    # disabled: bool | None = None
+
+
 
 class Time(BaseModel):
     startDateTime: str = Field(...)
