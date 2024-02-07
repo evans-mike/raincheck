@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional
-from pydantic import BaseModel, Field
+import dataclasses
+from pydantic import BaseModel, Field, dataclass
 import urllib.parse
 from functools import lru_cache 
 import dateutil.parser
@@ -9,64 +10,48 @@ from dotenv import dotenv_values
 
 config = dotenv_values(".env")
 
+@dataclass
+class Time:
+    startDateTime: str = dataclasses.field(
+        default=None,
+        metadata=dict(title='This is the startDateTime of an event.')
+    )
+    endDateTime: Optional[str] = dataclasses.field(
+        default=None,
+        metadata=dict(title='This is the endDateTime of an event.', description='This is not requried.')
+    )
 
-class Time(BaseModel):
-    startDateTime: str = Field(...)
-    # endDateTime: Optional[str] = Field(...)
+@dataclass
+class Place:
+    address: str
+    lat: Optional[float]
+    lon: Optional[float]
+    gridId: Optional[str]
+    gridX: Optional[int]
+    gridY: Optional[int]
 
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
-            "example": {
-                "startDateTime": "2023-12-11T06:00:00-05:00",
-                "endDateTime": "..."
-            }
-        }
-
-
-class Place(BaseModel):
-    address: str = Field(...)
-    # lat: Optional[float] = Field(...)
-    # lon: Optional[float] = Field(...)
-    # gridId: Optional[str] = Field(...)
-    # gridX: Optional[int] = Field(...)
-    # gridY: Optional[int] = Field(...)
-
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
-            "example": {
-                "address": "123 E Main StLouisville, KY 40202",
-                "lat": "...",
-                "lon": "...",
-                "gridId": "...",
-                "gridX": "...",
-                "gridY": "..."
-            }
-        }
-    
     @lru_cache
-    def get_lat_lon_for_address(address):
+    def get_lat_lon_for_address(self):
         
-        address_encoded = urllib.parse.quote_plus(address)
+        address_encoded = urllib.parse.quote_plus(self.address)
 
         r = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={address_encoded}&key={config["GOOGLE_API_KEY"]}')
-        
-        lat = r.json()['results'][0]['geometry']['location']['lat']
-        lon = r.json()['results'][0]['geometry']['location']['lng']
+        # if HTTP 200
+        self.lat = r.json()['results'][0]['geometry']['location']['lat']
+        self.lon = r.json()['results'][0]['geometry']['location']['lng']
 
-        return lat, lon
+        # return self.lat, self.lon
 
 
     @lru_cache
-    def get_gridpoints_by_lat_lon(lat, lon) -> str:
-        r = requests.get(f'https://api.weather.gov/points/{lat},{lon}')
-        
-        gridId = r.json()['properties']['gridId']
-        gridX = r.json()['properties']['gridX']
-        gridY = r.json()['properties']['gridY']
+    def get_gridpoints_by_lat_lon(self) -> str:
+        r = requests.get(f'https://api.weather.gov/points/{self.lat},{self.lon}')
+        # if HTTP 200
+        self.gridId = r.json()['properties']['gridId']
+        self.gridX = r.json()['properties']['gridX']
+        self.gridY = r.json()['properties']['gridY']
 
-        return gridId, gridX, gridY
+        # return self.gridId, self.gridX, self.gridY
 
 
 class Subscriber(BaseModel):
