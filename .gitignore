@@ -3,3 +3,4 @@ forecast.json
 geocodes.json
 period_forecast.json
 points.json
+.venv

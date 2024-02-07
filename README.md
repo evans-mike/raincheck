@@ -7,8 +7,8 @@
 ## VENV
 
 - `cd <repo>`
-- `virtualenv venv` to create your new environment (called 'venv' here)
-- `source venv/bin/activate` to enter the virtual environment
+- `python -m venv <repo>` to create your new environment (called 'venv' here)
+- `source .venv/bin/activate` to enter the virtual environment
 - `pip install -r requirements.txt` to install the requirements in the current environment
 
 Make sure your uvicorn process is still running before you continue. If it's not, you can start with the same command in the terminal:
