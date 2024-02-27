@@ -8,9 +8,6 @@ from fastapi.security import OAuth2PasswordBearer
 
 from routes import router
 
-
-
-
 # TODO: Authentication https://fastapi.tiangolo.com/tutorial/security/first-steps/
 
 # TODO: Logger https://docs.python.org/3/howto/logging-cookbook.html
@@ -32,7 +29,6 @@ async def lifespan(app: FastAPI):
     startup_db_client()
     yield
     shutdown_db_client()
-
 
 app = FastAPI(lifespan=lifespan)
 

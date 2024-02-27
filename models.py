@@ -183,23 +183,23 @@ class Event:
         self.get_event_forecast()
 
 
-# @dataclasses.dataclass
-# class EventUpdate(Event):
-#     time: Time
-#     place: Place
-#     subscriber: Subscriber
-#     forecast: Optional[object] = dataclasses.field(
-#         default=None,
-#         metadata=dict(title='This is the forecast of an event.')
-#     )
+@dataclasses.dataclass
+class EventUpdate(Event): # WIP
+    time: Time
+    place: Place
+    subscriber: Subscriber
+    forecast: Optional[object] = dataclasses.field(
+        default=None,
+        metadata=dict(title='This is the forecast of an event.')
+    )
     
-#     class Config:
-#         json_schema_extra = {
-#             "example": {
-#                 "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-#                 "time": "{...}",
-#                 "place": "{...}",
-#                 "forecast": "{...}",
-#                 "subscriber": "{...}"
-#             }
-#         }
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
+                "time": "{...}",
+                "place": "{...}",
+                "forecast": "{...}",
+                "subscriber": "{...}"
+            }
+        }
