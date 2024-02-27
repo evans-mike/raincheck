@@ -1,5 +1,4 @@
 
-import json
 from fastapi import FastAPI, Depends
 from dotenv import dotenv_values
 from pymongo import MongoClient

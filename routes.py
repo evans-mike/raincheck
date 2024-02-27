@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from models import Event, EventUpdate, Place, Subscriber, Time, Forecast, User
+from models import Event, EventUpdate, Place, Subscriber, Time, Forecast #, User
 
 router = APIRouter()
 
@@ -15,19 +15,19 @@ router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def fake_decode_token(token):
-    return User(
-        username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
-    )
+# def fake_decode_token(token):
+#     return User(
+#         username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
+#     )
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    user = fake_decode_token(token)
-    return user
+# async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+#     user = fake_decode_token(token)
+#     return user
 
 
-@router.get("/users/me")
-async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
-    return current_user
+# @router.get("/users/me")
+# async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
+#     return current_user
 
 ##############
 
@@ -54,7 +54,7 @@ def create_event(request: Request, event: Event = Body(...)): # can be empty req
     event = jsonable_encoder(event)
     event["_id"] = str(ObjectId())
 
-    event = fetch_new_forecast(event)
+    # event = fetch_new_forecast(event)
 
     new_event = request.app.database["events"].insert_one(event) # note this is the only place where we insert_one new document
     created_event = request.app.database["events"].find_one(
