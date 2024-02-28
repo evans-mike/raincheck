@@ -43,8 +43,8 @@ def create_subscriber(request: Request, subscriber: Subscriber = Body(...)):
     subscriber = jsonable_encoder(subscriber)
     subscriber["_id"] = str(ObjectId())
 
-    new_subscriber = request.app.database["events"].insert_one(subscriber)
-    created_subscriber = request.app.database["events"].find_one(
+    new_subscriber = request.app.database["subscriptions"].insert_one(subscriber)
+    created_subscriber = request.app.database["subscriptions"].find_one(
         {"_id": new_subscriber.inserted_id}
     )
     return created_subscriber
@@ -59,36 +59,41 @@ def create_subscriber(request: Request, subscriber: Subscriber = Body(...)):
 def create_event(request: Request, subscriber_id: str, event: Event = Body(...)):
 
     # find the subscriber
-    request.app.database["events"].find_one({"_id": subscriber_id})
+    result = request.app.database["subscriptions"].find_one({"_id": subscriber_id})
     event = jsonable_encoder(event)
     event["_id"] = str(ObjectId())
 
-    # update the subscriber with the new event
-    request.app.database["events"].update_one(
-        {"_id": subscriber_id}, {"$set": {"events": event}}
-    )
+    # check if subscriber has events array
+    if "events" in result['subscriber']:
+        # update the subscriber with the new event
+        request.app.database["subscriptions"].update_one(
+            {"_id": subscriber_id}, {"$push": {"events": event}}
+        )
 
-    subscriber = request.app.database["events"].find_one({"_id": subscriber_id})
-    if event["_id"] in subscriber["events"]:
-        return subscriber["events"][event["_id"]]
-
+    result = request.app.database["subscriptions"].find_one({"_id": subscriber_id})
+    if event["_id"] in result["subscriber"]["events"]:
+        return result["subscriber"]["events"][event["_id"]]
 
 
 @router.get(
-    "/subscriber/{subscriber_id}/events", response_description="Get events by subscriber_id", response_model=Event
+    "/subscriber/{subscriber_id}/events",
+    response_description="Get events by subscriber_id",
 )
 def fetch_subscriber_events(subscriber_id: str, request: Request):
 
-    if (Subscriber := request.app.database["events"].find_one({"_id": subscriber_id})) is not None:
-        return Subscriber["events"]
+    if (
+        result := request.app.database["subscriptions"].find_one({"_id": subscriber_id})
+    ) is not None:
+        return result["subscriber"]["events"]
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=f"Subscriber with ID {subscriber_id} not found"
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Subscriber with ID {subscriber_id} not found",
     )
 
 
 # @router.delete("/event/{id}", response_description="Delete a event")
 # def delete_event(id: str, request: Request, response: Response):
-#     delete_result = request.app.database["events"].delete_one({"_id": id})
+#     delete_result = request.app.database["subscriptions"].delete_one({"_id": id})
 
 #     if delete_result.deleted_count == 1:
 #         response.status_code = status.HTTP_204_NO_CONTENT
@@ -105,12 +110,12 @@ def fetch_subscriber_events(subscriber_id: str, request: Request):
 # )
 # def set_place(request: Request, id: str, place: Place = Body(...)):
 
-#     event = request.app.database["events"].find_one({"_id": id})
+#     event = request.app.database["subscriptions"].find_one({"_id": id})
 #     event["place"] = jsonable_encoder(place)
 
 #     updated_event = fetch_new_forecast(event)
 
-#     request.app.database["events"].update_one(
+#     request.app.database["subscriptions"].update_one(
 #         {"_id": id}, {"$set": {"place": event["place"], "forecast": event["forecast"]}}
 #     )
 
@@ -157,10 +162,10 @@ def fetch_subscriber_events(subscriber_id: str, request: Request):
 # def set_subscriber(request: Request, id: str, subscriber: Subscriber = Body(...)):
 
 #     subscriber = jsonable_encoder(subscriber)
-#     new_subscriber = request.app.database["events"].update_one(
+#     new_subscriber = request.app.database["subscriptions"].update_one(
 #         {"_id": id}, {"$set": {"subscriber": subscriber}}
 #     )
-#     updated_event = request.app.database["events"].find_one({"_id": id})
+#     updated_event = request.app.database["subscriptions"].find_one({"_id": id})
 
 #     return updated_event["subscriber"]
 
@@ -219,13 +224,13 @@ def fetch_subscriber_events(subscriber_id: str, request: Request):
 # )
 # def set_time(request: Request, id: str, time: Time = Body(...)):
 
-#     event = request.app.database["events"].find_one({"_id": id})
+#     event = request.app.database["subscriptions"].find_one({"_id": id})
 #     event = jsonable_encoder(event)
 #     event["time"] = jsonable_encoder(time)
 
 #     updated_event = fetch_new_forecast(event)
 
-#     request.app.database["events"].update_one(
+#     request.app.database["subscriptions"].update_one(
 #         {"_id": id}, {"$set": {"time": event["place"], "forecast": event["forecast"]}}
 #     )
 

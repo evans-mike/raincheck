@@ -11,20 +11,80 @@ import datetime
 config = dotenv_values(".env")
 
 
+"""
+"subcription": {
+    "_id": "65dfa4bf6053318daf2d53f5",
+    "subscriber": {
+        "_id": "65dfa4bf6053318daf2d53f6",
+        "phone": "555-555-5555",
+        "email": ""
+    },
+    "events": [
+        {
+            "_id": "65dfa4bf6053318daf2d53f7",
+            "time": {
+                "startDateTime": "2024-03-01T12:00:00-05:00",
+                "endDateTime": "2024-03-01T13:00:00-05:00"
+            },
+            "place": {
+                "address": "123 Main St, Louisville, KY 40202"
+            },
+            "forecast": {
+                "number": 1,
+                "name": "This is the forecast of an event.",
+                "startTime": "2024-03-01T12:00:00-05:00",
+                "endTime": "2024-03-01T13:00:00-05:00",
+                "isDaytime": True,
+                "temperature": 60,
+                "temperatureUnit": "F",
+                "windSpeed": "5 mph",
+                "windDirection": "SW",
+                "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                "shortForecast": "Sunny",
+                "detailedForecast": "This is the detailed forecast of an event."
+            }
+        },
+        {
+            "_id": "65dfa4bf6053318daf2d53f8",
+            "time": {
+                "startDateTime": "2024-03-01T12:00:00-05:00",
+                "endDateTime": "2024-03-01T13:00:00-05:00"
+            },
+            "place": {
+                "address": "123 Main St, Louisville, KY 40202"
+            },
+            "forecast": {
+                "number": 1,
+                "name": "This is the forecast of an event.",
+                "startTime": "2024-03-01T12:00:00-05:00",
+                "endTime": "2024-03-01T13:00:00-05:00",
+                "isDaytime": True,
+                "temperature": 60,
+                "temperatureUnit": "F",
+                "windSpeed": "5 mph",
+                "windDirection": "SW",
+                "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                "shortForecast": "Sunny",
+                "detailedForecast": "This is the detailed forecast of an event."
+            }
+        }
+    ]       
+}
+
+"""
+
 @dataclass
 class SubscriberDetails:
-    phone: str = (
-        dataclasses.field(
-            default="555-555-5555",
-            metadata=dict(title="This is the phone number of a Subscriber."),
-        )
+    phone: str = dataclasses.field(
+        default="555-555-5555",
+        metadata=dict(title="This is the phone number of a Subscriber."),
     )
     email: Optional[str] = dataclasses.field(
         default=None,
         metadata=dict(
             title="This is the email of a Subscriber.",
             description="This is not required.",
-        )
+        ),
     )
 
 
