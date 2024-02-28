@@ -73,6 +73,7 @@ config = dotenv_values(".env")
 
 """
 
+
 @dataclass
 class SubscriberDetails:
     phone: str = dataclasses.field(

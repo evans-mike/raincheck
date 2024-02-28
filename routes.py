@@ -64,7 +64,7 @@ def create_event(request: Request, subscriber_id: str, event: Event = Body(...))
     event["_id"] = str(ObjectId())
 
     # check if subscriber has events array
-    if "events" in result['subscriber']:
+    if "events" in result["subscriber"]:
         # update the subscriber with the new event
         request.app.database["subscriptions"].update_one(
             {"_id": subscriber_id}, {"$push": {"events": event}}
