@@ -6,14 +6,14 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from models import Event, EventUpdate, Place, Subscriber, Time, Forecast  # , User
+from models import Event, Subscriber, Time, Place
 
 router = APIRouter()
 
 
 #######auth########
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # def fake_decode_token(token):
 #     return User(
@@ -32,68 +32,57 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 ##############
 
 
-def fetch_new_forecast(event: dict):
-    """
-    Base method to take an event dict and fetch a new forecast
-    """
-    place = event["place"]
-    place["lat"], place["lon"] = Place.get_lat_lon_for_address(place["address"])
-    place["gridId"], place["gridX"], place["gridY"] = Place.get_gridpoints_by_lat_lon(
-        place["lat"], place["lon"]
+@router.post(
+    "/subscriber",
+    response_description="Create a new subscriber",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Subscriber,
+)
+def create_subscriber(request: Request, subscriber: Subscriber = Body(...)):
+
+    subscriber = jsonable_encoder(subscriber)
+    subscriber["_id"] = str(ObjectId())
+
+    new_subscriber = request.app.database["events"].insert_one(subscriber)
+    created_subscriber = request.app.database["events"].find_one(
+        {"_id": new_subscriber.inserted_id}
     )
-
-    time = event["time"]
-
-    forecast = Forecast.get_forecast_for_time_and_place(
-        place["gridId"], place["gridX"], place["gridY"], time["startDateTime"]
-    )
-    # TODO: need some rules around this e.g. if event start is > 10 days out, or outside the scope of hourly forecast, and whether or not there is an endDateTime
-    event["forecast"] = forecast
-
-    return event
+    return created_subscriber
 
 
 @router.post(
-    "/event",
-    response_description="Create a new event",
+    "/subscriber/{subscriber_id}/event",
+    response_description="Create a new subscriber event",
     status_code=status.HTTP_201_CREATED,
     response_model=Event,
 )
-def create_event(request: Request, event: Event = Body(...)):  # can be empty request
+def create_event(request: Request, subscriber_id: str, event: Event = Body(...)):
 
+    # find the subscriber
+    request.app.database["events"].find_one({"_id": subscriber_id})
     event = jsonable_encoder(event)
     event["_id"] = str(ObjectId())
 
-    # event = fetch_new_forecast(event)
-
-    new_event = request.app.database["events"].insert_one(
-        event
-    )  # note this is the only place where we insert_one new document
-    created_event = request.app.database["events"].find_one(
-        {"_id": new_event.inserted_id}
+    # update the subscriber with the new event
+    request.app.database["events"].update_one(
+        {"_id": subscriber_id}, {"$set": {"events": event}}
     )
 
-    return created_event
+    subscriber = request.app.database["events"].find_one({"_id": subscriber_id})
+    if event["_id"] in subscriber["events"]:
+        return subscriber["events"][event["_id"]]
 
-
-@router.get(
-    "/events", response_description="List all events", response_model=List[Event]
-)
-def list_events(request: Request):
-
-    events = list(request.app.database["events"].find(limit=100))
-    return events
 
 
 @router.get(
-    "/event/{id}", response_description="Get a single event by id", response_model=Event
+    "/subscriber/{subscriber_id}/events", response_description="Get events by subscriber_id", response_model=Event
 )
-def find_event(id: str, request: Request):
+def fetch_subscriber_events(subscriber_id: str, request: Request):
 
-    if (event := request.app.database["events"].find_one({"_id": id})) is not None:
-        return event
+    if (Subscriber := request.app.database["events"].find_one({"_id": subscriber_id})) is not None:
+        return Subscriber["events"]
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND, detail=f"Event with ID {id} not found"
+        status_code=status.HTTP_404_NOT_FOUND, detail=f"Subscriber with ID {subscriber_id} not found"
     )
 
 
@@ -108,24 +97,24 @@ def find_event(id: str, request: Request):
 #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Event with ID {id} not found")
 
 
-@router.post(
-    "/event/{id}/place",
-    response_description="Update event place",
-    status_code=status.HTTP_201_CREATED,
-    response_model=Place,
-)
-def set_place(request: Request, id: str, place: Place = Body(...)):
+# @router.post(
+#     "/event/{id}/place",
+#     response_description="Update event place",
+#     status_code=status.HTTP_201_CREATED,
+#     response_model=Place,
+# )
+# def set_place(request: Request, id: str, place: Place = Body(...)):
 
-    event = request.app.database["events"].find_one({"_id": id})
-    event["place"] = jsonable_encoder(place)
+#     event = request.app.database["events"].find_one({"_id": id})
+#     event["place"] = jsonable_encoder(place)
 
-    updated_event = fetch_new_forecast(event)
+#     updated_event = fetch_new_forecast(event)
 
-    request.app.database["events"].update_one(
-        {"_id": id}, {"$set": {"place": event["place"], "forecast": event["forecast"]}}
-    )
+#     request.app.database["events"].update_one(
+#         {"_id": id}, {"$set": {"place": event["place"], "forecast": event["forecast"]}}
+#     )
 
-    return updated_event["place"]
+#     return updated_event["place"]
 
 
 # @router.put("/event/{id}/place/{placeId}", response_description="Update a place", response_model=Place)
@@ -159,21 +148,21 @@ def set_place(request: Request, id: str, place: Place = Body(...)):
 #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Place with ID {placeId} not found")
 
 
-@router.post(
-    "/event/{id}/subscriber",
-    response_description="Create a new subscriber",
-    status_code=status.HTTP_201_CREATED,
-    response_model=Subscriber,
-)
-def set_subscriber(request: Request, id: str, subscriber: Subscriber = Body(...)):
+# @router.post(
+#     "/event/{id}/subscriber",
+#     response_description="Create a new subscriber",
+#     status_code=status.HTTP_201_CREATED,
+#     response_model=Subscriber,
+# )
+# def set_subscriber(request: Request, id: str, subscriber: Subscriber = Body(...)):
 
-    subscriber = jsonable_encoder(subscriber)
-    new_subscriber = request.app.database["events"].update_one(
-        {"_id": id}, {"$set": {"subscriber": subscriber}}
-    )
-    updated_event = request.app.database["events"].find_one({"_id": id})
+#     subscriber = jsonable_encoder(subscriber)
+#     new_subscriber = request.app.database["events"].update_one(
+#         {"_id": id}, {"$set": {"subscriber": subscriber}}
+#     )
+#     updated_event = request.app.database["events"].find_one({"_id": id})
 
-    return updated_event["subscriber"]
+#     return updated_event["subscriber"]
 
 
 # @router.get("/event/{id}/subscribers", response_description="List all subscribers", response_model=List[Subscriber])
@@ -222,25 +211,25 @@ def set_subscriber(request: Request, id: str, subscriber: Subscriber = Body(...)
 #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Subscriber with ID {id} not found")
 
 
-@router.post(
-    "/event/{id}/time",
-    response_description="Update event time",
-    status_code=status.HTTP_201_CREATED,
-    response_model=Time,
-)
-def set_time(request: Request, id: str, time: Time = Body(...)):
+# @router.post(
+#     "/event/{id}/time",
+#     response_description="Update event time",
+#     status_code=status.HTTP_201_CREATED,
+#     response_model=Time,
+# )
+# def set_time(request: Request, id: str, time: Time = Body(...)):
 
-    event = request.app.database["events"].find_one({"_id": id})
-    event = jsonable_encoder(event)
-    event["time"] = jsonable_encoder(time)
+#     event = request.app.database["events"].find_one({"_id": id})
+#     event = jsonable_encoder(event)
+#     event["time"] = jsonable_encoder(time)
 
-    updated_event = fetch_new_forecast(event)
+#     updated_event = fetch_new_forecast(event)
 
-    request.app.database["events"].update_one(
-        {"_id": id}, {"$set": {"time": event["place"], "forecast": event["forecast"]}}
-    )
+#     request.app.database["events"].update_one(
+#         {"_id": id}, {"$set": {"time": event["place"], "forecast": event["forecast"]}}
+#     )
 
-    return updated_event["time"]
+#     return updated_event["time"]
 
 
 # @router.get("/event/{id}/times", response_description="List all times", response_model=List[Time])

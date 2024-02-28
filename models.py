@@ -12,42 +12,44 @@ config = dotenv_values(".env")
 
 
 @dataclass
-class User:
-    username: str = dataclasses.field(
-        default=None, metadata=dict(title="This is the username of a User.")
+class SubscriberDetails:
+    phone: str = (
+        dataclasses.field(
+            default="555-555-5555",
+            metadata=dict(title="This is the phone number of a Subscriber."),
+        )
     )
-    email: str = dataclasses.field(
-        default=None, metadata=dict(title="This is the email of a User.")
-    )
-    full_name: str = dataclasses.field(
-        default=None, metadata=dict(title="This is the full name of a User.")
-    )
-    disabled: bool = dataclasses.field(
-        default=False,
+    email: Optional[str] = dataclasses.field(
+        default=None,
         metadata=dict(
-            title="This is whether the user is disabled.",
-            description="This is not requried.",
-        ),
+            title="This is the email of a Subscriber.",
+            description="This is not required.",
+        )
     )
+
+
+@dataclass
+class Subscriber:
+    subscriber: SubscriberDetails
 
 
 @dataclass
 class Time:
     startDateTime: str = dataclasses.field(
         default=datetime.datetime.now(
-            datetime.timezone(datetime.timedelta(-1, 68400), "EST")
+            datetime.timezone(datetime.timedelta(hours=-5), "EST")
         )
         + datetime.timedelta(days=1),
         metadata=dict(title="This is the startDateTime of an event."),
     )
     endDateTime: Optional[str] = dataclasses.field(
         default=datetime.datetime.now(
-            datetime.timezone(datetime.timedelta(-1, 68400), "EST")
+            datetime.timezone(datetime.timedelta(hours=-5), "EST")
         )
         + datetime.timedelta(days=2),
         metadata=dict(
             title="This is the endDateTime of an event.",
-            description="This is not requried.",
+            description="This is not required.",
         ),
     )
 
@@ -78,7 +80,7 @@ class Place:
         default=None,
         metadata=dict(
             title="This is the latitude of a Place of an event.",
-            description="This is not requried.",
+            description="This is not required.",
         ),
     )
     lon: Optional[float] = dataclasses.field(
@@ -106,7 +108,7 @@ class Place:
         default=None,
         metadata=dict(
             title="This is the gridY of a Place of an event.",
-            description="This is not requried.",
+            description="This is not required.",
         ),
     )
 
@@ -133,27 +135,6 @@ class Place:
     def __post_init__(self):
         self.get_lat_lon_for_address()
         self.get_gridpoints_by_lat_lon()
-
-
-@dataclass
-class Subscriber:
-    phone: str = dataclasses.field(
-        default="555-555-5555",
-        metadata=dict(title="This is the phone number of a Subscriber."),
-    )
-    email: Optional[str] = dataclasses.field(
-        default=None,
-        metadata=dict(
-            title="This is the email of a Subscriber.",
-            description="This is not requried.",
-        ),
-    )
-
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
-            "example": {"phone": "555-555-5555", "email": "someperson@raincheck.com"}
-        }
 
 
 # @dataclasses.dataclass
