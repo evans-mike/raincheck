@@ -2,7 +2,7 @@ from typing import Optional
 import dataclasses
 from pydantic.dataclasses import dataclass
 import urllib.parse
-from functools import lru_cache 
+from functools import lru_cache
 import dateutil.parser
 import requests
 from dotenv import dotenv_values
@@ -14,80 +14,121 @@ config = dotenv_values(".env")
 @dataclass
 class User:
     username: str = dataclasses.field(
-        default = None,
-        metadata=dict(title='This is the username of a User.')
+        default=None, metadata=dict(title="This is the username of a User.")
     )
     email: str = dataclasses.field(
-        default = None,
-        metadata=dict(title='This is the email of a User.')
+        default=None, metadata=dict(title="This is the email of a User.")
     )
     full_name: str = dataclasses.field(
-        default = None,
-        metadata=dict(title='This is the full name of a User.')
-    )   
+        default=None, metadata=dict(title="This is the full name of a User.")
+    )
     disabled: bool = dataclasses.field(
-        default = False,
-        metadata=dict(title='This is whether the user is disabled.', description='This is not requried.')
+        default=False,
+        metadata=dict(
+            title="This is whether the user is disabled.",
+            description="This is not requried.",
+        ),
     )
 
 
 @dataclass
 class Time:
     startDateTime: str = dataclasses.field(
-        # default utcnow plus one day
-        default=datetime.datetime.now(datetime.timezone(datetime.timedelta(-1, 68400), 'EST')) + datetime.timedelta(days=1),
-        metadata=dict(title='This is the startDateTime of an event.')
+        default=datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(-1, 68400), "EST")
+        )
+        + datetime.timedelta(days=1),
+        metadata=dict(title="This is the startDateTime of an event."),
     )
     endDateTime: Optional[str] = dataclasses.field(
-        default=datetime.datetime.now(datetime.timezone(datetime.timedelta(-1, 68400), 'EST')) + datetime.timedelta(days=2),
-        metadata=dict(title='This is the endDateTime of an event.', description='This is not requried.')
+        default=datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(-1, 68400), "EST")
+        )
+        + datetime.timedelta(days=2),
+        metadata=dict(
+            title="This is the endDateTime of an event.",
+            description="This is not requried.",
+        ),
     )
-    
+
+    def validate_start_end_times(self):
+        if dateutil.parser.parse(self.startDateTime) >= dateutil.parser.parse(
+            self.endDateTime
+        ):
+            raise ValueError("The startDateTime must be before the endDateTime.")
+
+    def validate_future_start_time(self):
+        if dateutil.parser.parse(self.startDateTime) <= datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(-1, 68400), "EST")
+        ):
+            raise ValueError("The startDateTime must be in the future.")
+
+    def __post_init__(self):
+        self.validate_start_end_times()
+        self.validate_future_start_time()
+
 
 @dataclass
 class Place:
     address: str = dataclasses.field(
-        default = '123 W Main St, Louisville, KY 40202',
-        metadata=dict(title='This is the address of a Place of an event.')
+        default="123 W Main St, Louisville, KY 40202",
+        metadata=dict(title="This is the address of a Place of an event."),
     )
     lat: Optional[float] = dataclasses.field(
         default=None,
-        metadata=dict(title='This is the latitude of a Place of an event.', description='This is not requried.')
-    )   
+        metadata=dict(
+            title="This is the latitude of a Place of an event.",
+            description="This is not requried.",
+        ),
+    )
     lon: Optional[float] = dataclasses.field(
         default=None,
-        metadata=dict(title='This is the longitude of a Place of an event.', description='This is not requried.')
+        metadata=dict(
+            title="This is the longitude of a Place of an event.",
+            description="This is not requried.",
+        ),
     )
     gridId: Optional[str] = dataclasses.field(
         default=None,
-        metadata=dict(title='This is the gridId of a Place of an event.', description='This is not requried.')
+        metadata=dict(
+            title="This is the gridId of a Place of an event.",
+            description="This is not requried.",
+        ),
     )
     gridX: Optional[int] = dataclasses.field(
         default=None,
-        metadata=dict(title='This is the gridX of a Place of an event.', description='This is not requried.')
+        metadata=dict(
+            title="This is the gridX of a Place of an event.",
+            description="This is not requried.",
+        ),
     )
     gridY: Optional[int] = dataclasses.field(
         default=None,
-        metadata=dict(title='This is the gridY of a Place of an event.', description='This is not requried.')
+        metadata=dict(
+            title="This is the gridY of a Place of an event.",
+            description="This is not requried.",
+        ),
     )
 
-    @lru_cache
     def get_lat_lon_for_address(self):
-        
+
         address_encoded = urllib.parse.quote_plus(self.address)
 
-        r = requests.get(f'https://maps.googleapis.com/maps/api/geocode/json?address={address_encoded}&key={config["GOOGLE_API_KEY"]}')
+        r = requests.get(
+            f'https://maps.googleapis.com/maps/api/geocode/json?address={address_encoded}&key={config["GOOGLE_API_KEY"]}'
+        )
         r.raise_for_status()
-        self.lat = r.json()['results'][0]['geometry']['location']['lat']
-        self.lon = r.json()['results'][0]['geometry']['location']['lng']
+        if r.json()["status"] == "ZERO_RESULTS":
+            raise ValueError("The address provided returned no results.")
+        self.lat = r.json()["results"][0]["geometry"]["location"]["lat"]
+        self.lon = r.json()["results"][0]["geometry"]["location"]["lng"]
 
-    @lru_cache
     def get_gridpoints_by_lat_lon(self):
-        r = requests.get(f'https://api.weather.gov/points/{self.lat},{self.lon}')
+        r = requests.get(f"https://api.weather.gov/points/{self.lat},{self.lon}")
         r.raise_for_status()
-        self.gridId = r.json()['properties']['gridId']
-        self.gridX = r.json()['properties']['gridX']
-        self.gridY = r.json()['properties']['gridY']
+        self.gridId = r.json()["properties"]["gridId"]
+        self.gridX = r.json()["properties"]["gridX"]
+        self.gridY = r.json()["properties"]["gridY"]
 
     def __post_init__(self):
         self.get_lat_lon_for_address()
@@ -97,45 +138,45 @@ class Place:
 @dataclass
 class Subscriber:
     phone: str = dataclasses.field(
-        default = '555-555-5555',
-        metadata=dict(title='This is the phone number of a Subscriber.')
+        default="555-555-5555",
+        metadata=dict(title="This is the phone number of a Subscriber."),
     )
     email: Optional[str] = dataclasses.field(
         default=None,
-        metadata=dict(title='This is the email of a Subscriber.', description='This is not requried.')
+        metadata=dict(
+            title="This is the email of a Subscriber.",
+            description="This is not requried.",
+        ),
     )
 
     class Config:
         populate_by_name = True
         json_schema_extra = {
-            "example": {
-                "phone": "555-555-5555",
-                "email": "someperson@raincheck.com"
-            }
+            "example": {"phone": "555-555-5555", "email": "someperson@raincheck.com"}
         }
 
 
-@dataclasses.dataclass
-class Notification(Subscriber):
-    
-    subscribed_texts: Optional[bool] = dataclasses.field(
-        default=True,
-        metadata=dict(title='This is whether the subscriber wants to receive text messages.', description='This is not requried.')
-    )
-    subscribed_emails: Optional[bool] = dataclasses.field(
-        default=False,
-        metadata=dict(title='This is whether the subscriber wants to receive emails.', description='This is not requried.')
-    )
+# @dataclasses.dataclass
+# class Notification(Subscriber):
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "phone": "555-555-5555",
-                "email": "someperson@raincheck.com",
-                "subscribed_texts": True,
-                "subscribed_emails": False
-            }
-        }
+#     subscribed_texts: Optional[bool] = dataclasses.field(
+#         default=True,
+#         metadata=dict(title='This is whether the subscriber wants to receive text messages.', description='This is not requried.')
+#     )
+#     subscribed_emails: Optional[bool] = dataclasses.field(
+#         default=False,
+#         metadata=dict(title='This is whether the subscriber wants to receive emails.', description='This is not requried.')
+#     )
+
+#     class Config:
+#         json_schema_extra = {
+#             "example": {
+#                 "phone": "555-555-5555",
+#                 "email": "someperson@raincheck.com",
+#                 "subscribed_texts": True,
+#                 "subscribed_emails": False
+#             }
+#         }
 
 
 @dataclass
@@ -143,8 +184,7 @@ class Event:
     time: Time
     place: Place
     forecast: Optional[object] = dataclasses.field(
-        default=None,
-        metadata=dict(title='This is the forecast of an event.')
+        default=None, metadata=dict(title="This is the forecast of an event.")
     )
 
     class Config:
@@ -153,26 +193,26 @@ class Event:
             "example": {
                 "time": {
                     "startDateTime": "2024-03-01T12:00:00-05:00",
-                    "endDateTime": "2024-03-01T13:00:00-05:00"
-                    },
-                "place": {
-                    "address": "123 Main St, Louisville, KY 40202"
-                    }
+                    "endDateTime": "2024-03-01T13:00:00-05:00",
+                },
+                "place": {"address": "123 Main St, Louisville, KY 40202"},
             }
         }
 
-    def get_event_forecast(self) -> dict: # TODO: break this into smaller methods
+    def get_event_forecast(self) -> dict:  # TODO: break this into smaller methods
 
-        r = requests.get(f'https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast/hourly')
+        r = requests.get(
+            f"https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast/hourly"
+        )
         r.raise_for_status()
 
-        forecast = r.json()['properties']['periods']
+        forecast = r.json()["properties"]["periods"]
 
         event_time = dateutil.parser.parse(self.time.startDateTime)
-        
+
         for period_forecast in forecast:
-            start_time = dateutil.parser.parse(period_forecast['startTime'])
-            end_time = dateutil.parser.parse(period_forecast['endTime'])
+            start_time = dateutil.parser.parse(period_forecast["startTime"])
+            end_time = dateutil.parser.parse(period_forecast["endTime"])
 
             if event_time >= start_time and event_time <= end_time:
                 break
@@ -183,23 +223,23 @@ class Event:
         self.get_event_forecast()
 
 
-@dataclasses.dataclass
-class EventUpdate(Event): # WIP
-    time: Time
-    place: Place
-    subscriber: Subscriber
-    forecast: Optional[object] = dataclasses.field(
-        default=None,
-        metadata=dict(title='This is the forecast of an event.')
-    )
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-                "time": "{...}",
-                "place": "{...}",
-                "forecast": "{...}",
-                "subscriber": "{...}"
-            }
-        }
+# @dataclasses.dataclass
+# class EventUpdate(Event): # WIP
+#     time: Time
+#     place: Place
+#     forecast: Optional[object] = dataclasses.field(
+#         default=None,
+#         metadata=dict(title='This is the forecast of an event.')
+#     )
+#     subscriber: Subscriber
+
+#     class Config:
+#         json_schema_extra = {
+#             "example": {
+#                 "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
+#                 "time": "{...}",
+#                 "place": "{...}",
+#                 "forecast": "{...}",
+#                 "subscriber": "{...}"
+#             }
+#         }
