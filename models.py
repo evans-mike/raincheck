@@ -12,70 +12,82 @@ config = dotenv_values(".env")
 
 
 """
-"subcription": {
-    "_id": "65dfa4bf6053318daf2d53f5",
-    "subscriber": {
-        "_id": "65dfa4bf6053318daf2d53f6",
-        "phone": "555-555-5555",
-        "email": ""
-    },
-    "events": [
-        {
-            "_id": "65dfa4bf6053318daf2d53f7",
-            "time": {
-                "startDateTime": "2024-03-01T12:00:00-05:00",
-                "endDateTime": "2024-03-01T13:00:00-05:00"
-            },
-            "place": {
-                "address": "123 Main St, Louisville, KY 40202"
-            },
-            "forecast": {
-                "number": 1,
-                "name": "This is the forecast of an event.",
-                "startTime": "2024-03-01T12:00:00-05:00",
-                "endTime": "2024-03-01T13:00:00-05:00",
-                "isDaytime": True,
-                "temperature": 60,
-                "temperatureUnit": "F",
-                "windSpeed": "5 mph",
-                "windDirection": "SW",
-                "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
-                "shortForecast": "Sunny",
-                "detailedForecast": "This is the detailed forecast of an event."
-            }
+"subscriptions": [
+    {
+        "_id": "65dfa4bf6053318daf2d53f9",
+        "subscriber": {
+            "phone": "555-555-5555",
+            "email": "",
+            "alert_texts": True,
+            "alert_emails": False
         },
-        {
-            "_id": "65dfa4bf6053318daf2d53f8",
-            "time": {
-                "startDateTime": "2024-03-01T12:00:00-05:00",
-                "endDateTime": "2024-03-01T13:00:00-05:00"
+        "events": [
+            {
+                "_id": "65dfa4bf6053318daf2d53f7",
+                "time": {
+                    "startDateTime": "2024-03-01T12:00:00-05:00",
+                    "endDateTime": "2024-03-01T13:00:00-05:00"
+                },
+                "place": {
+                    "address": "123 Main St, Louisville, KY 40202",
+                    "lat": 38.2542,
+                    "lon": 85.7594,
+                    "gridId": "LMK",
+                    "gridX": 84,
+                    "gridY": 86
+                },
+                "forecast": {
+                    "number": 1,
+                    "name": "This is the forecast of an event.",
+                    "startTime": "2024-03-01T12:00:00-05:00",
+                    "endTime": "2024-03-01T13:00:00-05:00",
+                    "isDaytime": True,
+                    "temperature": 60,
+                    "temperatureUnit": "F",
+                    "windSpeed": "5 mph",
+                    "windDirection": "SW",
+                    "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                    "shortForecast": "Sunny",
+                    "detailedForecast": "This is the detailed forecast of an event."
+                }
             },
-            "place": {
-                "address": "123 Main St, Louisville, KY 40202"
-            },
-            "forecast": {
-                "number": 1,
-                "name": "This is the forecast of an event.",
-                "startTime": "2024-03-01T12:00:00-05:00",
-                "endTime": "2024-03-01T13:00:00-05:00",
-                "isDaytime": True,
-                "temperature": 60,
-                "temperatureUnit": "F",
-                "windSpeed": "5 mph",
-                "windDirection": "SW",
-                "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
-                "shortForecast": "Sunny",
-                "detailedForecast": "This is the detailed forecast of an event."
+            {
+                "_id": "65dfa4bf6053318daf2d53f8",
+                "time": {
+                    "startDateTime": "2024-03-01T12:00:00-05:00",
+                    "endDateTime": "2024-03-01T13:00:00-05:00"
+                },
+                "place": {
+                    "address": "123 Main St, Louisville, KY 40202",
+                    "lat": 38.2542,
+                    "lon": 85.7594,
+                    "gridId": "LMK",
+                    "gridX": 84,
+                    "gridY": 86
+                },
+                "forecast": {
+                    "number": 1,
+                    "name": "This is the forecast of an event.",
+                    "startTime": "2024-03-01T12:00:00-05:00",
+                    "endTime": "2024-03-01T13:00:00-05:00",
+                    "isDaytime": True,
+                    "temperature": 60,
+                    "temperatureUnit": "F",
+                    "windSpeed": "5 mph",
+                    "windDirection": "SW",
+                    "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                    "shortForecast": "Sunny",
+                    "detailedForecast": "This is the detailed forecast of an event."
+                }
             }
-        }
-    ]       
-}
-
+        ]
+    }
+]
 """
 
 
 @dataclass
-class SubscriberDetails:
+class Subscriber:
     phone: str = dataclasses.field(
         default="555-555-5555",
         metadata=dict(title="This is the phone number of a Subscriber."),
@@ -87,11 +99,30 @@ class SubscriberDetails:
             description="This is not required.",
         ),
     )
+    alert_texts: Optional[bool] = dataclasses.field(
+        default=True,
+        metadata=dict(
+            title="This is whether the subscriber wants to receive text messages.",
+            description="This is not requried.",
+        ),
+    )
+    alert_emails: Optional[bool] = dataclasses.field(
+        default=False,
+        metadata=dict(
+            title="This is whether the subscriber wants to receive emails.",
+            description="This is not requried.",
+        ),
+    )
 
-
-@dataclass
-class Subscriber:
-    subscriber: SubscriberDetails
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "phone": "555-555-5555",
+                "email": ",",
+                "alert_texts": True,
+                "alert_emails": False,
+            }
+        }
 
 
 @dataclass
@@ -263,6 +294,23 @@ class Event:
 
     def __post_init__(self):
         self.get_event_forecast()
+
+
+@dataclass
+class Subscription:
+    subscriber: Subscriber
+    events: list[Event]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "subscriber": "{...}",
+                "events": [
+                    "{...}",
+                    "{...}"
+                ]
+            }
+        }
 
 
 # @dataclasses.dataclass

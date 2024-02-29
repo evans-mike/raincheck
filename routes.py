@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from models import Event, Subscriber, Time, Place
+from models import Event, Subscriber, Subscription, Time, Place
 
 router = APIRouter()
 
@@ -33,61 +33,63 @@ router = APIRouter()
 
 
 @router.post(
-    "/subscriber",
-    response_description="Create a new subscriber",
+    "/",
+    response_description="Create a new subscription",
     status_code=status.HTTP_201_CREATED,
-    response_model=Subscriber,
+    response_model=Subscription,
 )
-def create_subscriber(request: Request, subscriber: Subscriber = Body(...)):
+def create_subscription(request: Request, subscription: Subscription = Body(...)):
 
-    subscriber = jsonable_encoder(subscriber)
-    subscriber["_id"] = str(ObjectId())
+    subscription = jsonable_encoder(subscription)
+    subscription["_id"] = str(ObjectId())
 
-    new_subscriber = request.app.database["subscriptions"].insert_one(subscriber)
-    created_subscriber = request.app.database["subscriptions"].find_one(
-        {"_id": new_subscriber.inserted_id}
+    new_subscription = request.app.database["subscriptions"].insert_one(subscription)
+    created_subscription = request.app.database["subscriptions"].find_one(
+        {"_id": new_subscription.inserted_id}
     )
-    return created_subscriber
+    return created_subscription
 
 
 @router.post(
-    "/subscriber/{subscriber_id}/event",
+    "/{id}/event",
     response_description="Create a new subscriber event",
     status_code=status.HTTP_201_CREATED,
-    response_model=Event,
+    # response_model=Event, # WIP: would like to enforce a response model
 )
-def create_event(request: Request, subscriber_id: str, event: Event = Body(...)):
+def create_event(request: Request, id: str, body: Event = Body(...)):
 
-    # find the subscriber
-    result = request.app.database["subscriptions"].find_one({"_id": subscriber_id})
-    event = jsonable_encoder(event)
-    event["_id"] = str(ObjectId())
+    result = request.app.database["subscriptions"].find_one({"_id": id})
+    body = jsonable_encoder(body)
+    body["_event_id"] = str(ObjectId())
 
-    # check if subscriber has events array
-    if "events" in result["subscriber"]:
-        # update the subscriber with the new event
-        request.app.database["subscriptions"].update_one(
-            {"_id": subscriber_id}, {"$push": {"events": event}}
-        )
+    request.app.database["subscriptions"].update_one(
+        {"_id": id}, {"$push": {"events": body}}
+    )
 
-    result = request.app.database["subscriptions"].find_one({"_id": subscriber_id})
-    if event["_id"] in result["subscriber"]["events"]:
-        return result["subscriber"]["events"][event["_id"]]
+    if (
+        result := request.app.database["subscriptions"].find_one({"events": {"$elemMatch": {"_event_id": body["_event_id"]}}}, {"events.$": 1})
+    ) is not None:
+        return result
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Event with ID {body['_event_id']} not found",
+    )
 
 
 @router.get(
-    "/subscriber/{subscriber_id}/events",
+    "/{id}/events",
     response_description="Get events by subscriber_id",
+    # response_model=List[Event], # WIP: would like to enforce a response model
 )
-def fetch_subscriber_events(subscriber_id: str, request: Request):
+def fetch_subscriber_events(id: str, request: Request):
 
     if (
-        result := request.app.database["subscriptions"].find_one({"_id": subscriber_id})
+        result := request.app.database["subscriptions"].find_one({"_id": id}, {"events": 1})
     ) is not None:
-        return result["subscriber"]["events"]
+        return result
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Subscriber with ID {subscriber_id} not found",
+        detail=f"Subscription with ID {id} not found",
     )
 
 
