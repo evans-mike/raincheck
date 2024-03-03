@@ -303,13 +303,7 @@ class Subscription:
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "subscriber": "{...}",
-                "events": [
-                    "{...}",
-                    "{...}"
-                ]
-            }
+            "example": {"subscriber": "{...}", "events": ["{...}", "{...}"]}
         }
 
 

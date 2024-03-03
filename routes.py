@@ -67,7 +67,10 @@ def create_event(request: Request, id: str, body: Event = Body(...)):
     )
 
     if (
-        result := request.app.database["subscriptions"].find_one({"events": {"$elemMatch": {"_event_id": body["_event_id"]}}}, {"events.$": 1})
+        result := request.app.database["subscriptions"].find_one(
+            {"events": {"$elemMatch": {"_event_id": body["_event_id"]}}},
+            {"events.$": 1},
+        )
     ) is not None:
         return result
     raise HTTPException(
@@ -84,12 +87,35 @@ def create_event(request: Request, id: str, body: Event = Body(...)):
 def fetch_subscriber_events(id: str, request: Request):
 
     if (
-        result := request.app.database["subscriptions"].find_one({"_id": id}, {"events": 1})
+        result := request.app.database["subscriptions"].find_one(
+            {"_id": id}, {"events": 1}
+        )
     ) is not None:
         return result
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Subscription with ID {id} not found",
+    )
+
+
+# PUT endpoint for updating an event
+@router.put(
+    "/{id}/event/{event_id}",
+    response_description="Update an event",
+    response_model=Event,
+)
+def update_event(id: str, event_id: str, request: Request, event: Event = Body(...)):
+
+    updated_event = request.app.database["subscriptions"].update_one(
+        {"_id": id, "events._event_id": event_id}, {"$set": {"events.$": event}}
+    )
+    if updated_event.modified_count == 0:
+        raise HTTPException(
+            status_code=404, detail=f"Event with id {event_id} not found"
+        )
+
+    return request.app.database["subscriptions"].find_one(
+        {"_id": id, "events._event_id": event_id}, {"events.$": 1}
     )
 
 
