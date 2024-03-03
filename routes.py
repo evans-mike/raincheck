@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Body, Request, Response, HTTPException, status, Depends
 from fastapi.encoders import jsonable_encoder
 from typing import List, Annotated
-from bson.objectid import ObjectId
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -38,12 +37,14 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     response_model=Subscription,
 )
-def create_subscription(request: Request, subscription: Subscription = Body(...)):
+async def create_subscription(request: Request, subscription: Subscription = Body(...)):
 
     subscription = jsonable_encoder(subscription)
-    subscription["_id"] = str(ObjectId())
 
-    new_subscription = request.app.database["subscriptions"].insert_one(subscription)
+    # A unique `id` will be created and provided in the response.
+    new_subscription = await request.app.database["subscriptions"].insert_one(
+        subscription.model_dump(by_alias=True, exclude=["id"]) # TODO: dict does not have attribute model_dump
+    )
     created_subscription = request.app.database["subscriptions"].find_one(
         {"_id": new_subscription.inserted_id}
     )
@@ -54,22 +55,24 @@ def create_subscription(request: Request, subscription: Subscription = Body(...)
     "/{id}/event",
     response_description="Create a new subscriber event",
     status_code=status.HTTP_201_CREATED,
-    # response_model=Event, # WIP: would like to enforce a response model
+    response_model=Event,
 )
-def create_event(request: Request, id: str, body: Event = Body(...)):
+async def create_event(request: Request, id: str, body: Event = Body(...)):
 
-    result = request.app.database["subscriptions"].find_one({"_id": id})
+    result = await request.app.database["subscriptions"].find_one({"_id": id})
     body = jsonable_encoder(body)
-    body["_event_id"] = str(ObjectId())
 
     request.app.database["subscriptions"].update_one(
         {"_id": id}, {"$push": {"events": body}}
     )
 
     if (
-        result := request.app.database["subscriptions"].find_one({"events": {"$elemMatch": {"_event_id": body["_event_id"]}}}, {"events.$": 1})
+        result := request.app.database["subscriptions"].find_one(
+            {"events": {"$elemMatch": {"_event_id": body["_event_id"]}}},
+            {"events.$": 1},
+        )
     ) is not None:
-        return result
+        return result["events"][0]  # customer return
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Event with ID {body['_event_id']} not found",
@@ -79,17 +82,73 @@ def create_event(request: Request, id: str, body: Event = Body(...)):
 @router.get(
     "/{id}/events",
     response_description="Get events by subscriber_id",
-    # response_model=List[Event], # WIP: would like to enforce a response model
+    response_model=List[Event],
 )
 def fetch_subscriber_events(id: str, request: Request):
 
     if (
-        result := request.app.database["subscriptions"].find_one({"_id": id}, {"events": 1})
+        result := request.app.database["subscriptions"].find_one(
+            {"_id": id}, {"events": 1, "_id": 0}
+        )
     ) is not None:
-        return result
+        return result["events"]
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Subscription with ID {id} not found",
+    )
+
+
+@router.get(
+    "/{id}/event/{event_id}",
+    response_description="Get event by _event_id and _id",
+    response_model=Event,
+)
+def fetch_event(id: str, event_id: str, request: Request):
+
+    if (
+        result := request.app.database["subscriptions"].find_one(
+            {"_id": id, "events": {"$elemMatch": {"_event_id": event_id}}},
+            {"events.$": 1, "_id": 0},
+        )
+    ) is not None:
+        return result["events"][0]
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Event with ID {event_id} not found",
+    )
+
+
+@router.put(
+    "/{id}/event/{event_id}",
+    response_description="Update an event",
+    response_model=Event,
+)
+def update_event(id: str, event_id: str, request: Request, body: Event = Body(...)):
+
+    body = jsonable_encoder(body)
+
+    # Query 2: update the event
+    update_result = request.app.database["subscriptions"].update_one(
+        {"_id": id, "events": {"$elemMatch": {"_event_id": event_id}}},
+        {"$set": {"events.$": body}},
+    )
+    if update_result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f" Query 2 Event with ID {event_id} not found",
+        )
+
+    # Query 3: return the updated event
+    if (
+        modified_event := request.app.database["subscriptions"].find_one(
+            {"_id": id, "events": {"$elemMatch": {"_event_id": event_id}}},
+            {"events.$": 1, "_id": 0},
+        )
+    ) is not None:
+        return modified_event["events"][0]
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Query 3 Event with ID {event_id} not found",
     )
 
 

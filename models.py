@@ -1,12 +1,13 @@
-from typing import Optional
-import dataclasses
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, Field, EmailStr
 import urllib.parse
 from functools import lru_cache
 import dateutil.parser
-import requests
 from dotenv import dotenv_values
-import datetime
+from bson.objectid import ObjectId
+from datetime import datetime, timedelta, timezone
+import requests
+from typing import Optional, List
+from bson import ObjectId
 
 config = dotenv_values(".env")
 
@@ -86,27 +87,17 @@ config = dotenv_values(".env")
 """
 
 
-@dataclass
-class Subscriber:
-    phone: str = dataclasses.field(
-        default="555-555-5555",
-        metadata=dict(title="This is the phone number of a Subscriber."),
-    )
-    email: Optional[str] = dataclasses.field(
-        default=None,
-        metadata=dict(
-            title="This is the email of a Subscriber.",
-            description="This is not required.",
-        ),
-    )
-    alert_texts: Optional[bool] = dataclasses.field(
+class Subscriber(BaseModel):
+    phone: str = "555-555-5555"
+    email: Optional[EmailStr] = None
+    alert_texts: Optional[bool] = Field(
         default=True,
         metadata=dict(
             title="This is whether the subscriber wants to receive text messages.",
             description="This is not requried.",
         ),
     )
-    alert_emails: Optional[bool] = dataclasses.field(
+    alert_emails: Optional[bool] = Field(
         default=False,
         metadata=dict(
             title="This is whether the subscriber wants to receive emails.",
@@ -115,35 +106,32 @@ class Subscriber:
     )
 
     class Config:
+        title = "Subscriber"
+        description = "This is a subscriber."
         json_schema_extra = {
             "example": {
-                "phone": "555-555-5555",
-                "email": ",",
-                "alert_texts": True,
-                "alert_emails": False,
+                "phone": "555-555-5555"
             }
         }
 
 
-@dataclass
-class Time:
-    startDateTime: str = dataclasses.field(
-        default=datetime.datetime.now(
-            datetime.timezone(datetime.timedelta(hours=-5), "EST")
-        )
-        + datetime.timedelta(days=1),
-        metadata=dict(title="This is the startDateTime of an event."),
-    )
-    endDateTime: Optional[str] = dataclasses.field(
-        default=datetime.datetime.now(
-            datetime.timezone(datetime.timedelta(hours=-5), "EST")
-        )
-        + datetime.timedelta(days=2),
-        metadata=dict(
-            title="This is the endDateTime of an event.",
-            description="This is not required.",
-        ),
-    )
+class Time(BaseModel):
+    startDateTime: str = (
+        datetime.now(timezone(timedelta(hours=-5), "EST")) + timedelta(days=1)
+    ).isoformat()
+    endDateTime: Optional[str] = (
+        datetime.now(timezone(timedelta(hours=-5), "EST")) + timedelta(days=2)
+    ).isoformat()
+
+    class Config:
+        title = "Time"
+        description = "This is a time."
+        json_schema_extra = {
+            "example": {
+                "startDateTime": "2024-03-01T12:00:00-05:00",
+                "endDateTime": "2024-03-01T13:00:00-05:00",
+            }
+        }
 
     def validate_start_end_times(self):
         if dateutil.parser.parse(self.startDateTime) >= dateutil.parser.parse(
@@ -152,56 +140,45 @@ class Time:
             raise ValueError("The startDateTime must be before the endDateTime.")
 
     def validate_future_start_time(self):
-        if dateutil.parser.parse(self.startDateTime) <= datetime.datetime.now(
-            datetime.timezone(datetime.timedelta(-1, 68400), "EST")
+        if dateutil.parser.parse(self.startDateTime) <= datetime.now(
+            timezone(timedelta(-1, 68400), "EST")
         ):
             raise ValueError("The startDateTime must be in the future.")
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self.validate_start_end_times()
         self.validate_future_start_time()
 
 
-@dataclass
-class Place:
-    address: str = dataclasses.field(
+class Place(BaseModel):
+    address: str = Field(
         default="123 W Main St, Louisville, KY 40202",
-        metadata=dict(title="This is the address of a Place of an event."),
+        title="This is the address of a Place of an event.",
     )
-    lat: Optional[float] = dataclasses.field(
+    lat: Optional[float] = Field(
         default=None,
-        metadata=dict(
-            title="This is the latitude of a Place of an event.",
-            description="This is not required.",
-        ),
+        title="This is the latitude of a Place of an event.",
+        description="This is not required.",
     )
-    lon: Optional[float] = dataclasses.field(
+    lon: Optional[float] = Field(
         default=None,
-        metadata=dict(
-            title="This is the longitude of a Place of an event.",
-            description="This is not requried.",
-        ),
+        title="This is the longitude of a Place of an event.",
+        description="This is not required.",
     )
-    gridId: Optional[str] = dataclasses.field(
+    gridId: Optional[str] = Field(
         default=None,
-        metadata=dict(
-            title="This is the gridId of a Place of an event.",
-            description="This is not requried.",
-        ),
+        title="This is the gridId of a Place of an event.",
+        description="This is not required.",
     )
-    gridX: Optional[int] = dataclasses.field(
+    gridX: Optional[int] = Field(
         default=None,
-        metadata=dict(
-            title="This is the gridX of a Place of an event.",
-            description="This is not requried.",
-        ),
+        title="This is the gridX of a Place of an event.",
+        description="This is not required.",
     )
-    gridY: Optional[int] = dataclasses.field(
+    gridY: Optional[int] = Field(
         default=None,
-        metadata=dict(
-            title="This is the gridY of a Place of an event.",
-            description="This is not required.",
-        ),
+        title="This is the gridY of a Place of an event.",
+        description="This is not required.",
     )
 
     def get_lat_lon_for_address(self):
@@ -224,9 +201,23 @@ class Place:
         self.gridX = r.json()["properties"]["gridX"]
         self.gridY = r.json()["properties"]["gridY"]
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self.get_lat_lon_for_address()
         self.get_gridpoints_by_lat_lon()
+
+    class Config:
+        title = "Place"
+        description = "This is a place."
+        json_schema_extra = {
+            "example": {
+                "address": "123 Main St, Louisville, KY 40202",
+                "lat": 38.2542,
+                "lon": 85.7594,
+                "gridId": "LMK",
+                "gridX": 84,
+                "gridY": 86,
+            }
+        }
 
 
 # @dataclasses.dataclass
@@ -252,28 +243,17 @@ class Place:
 #         }
 
 
-@dataclass
-class Event:
+class Event(BaseModel):
     time: Time
     place: Place
-    forecast: Optional[object] = dataclasses.field(
-        default=None, metadata=dict(title="This is the forecast of an event.")
+    forecast: Optional[object] = Field(
+        default=None, title="This is the forecast of an event."
+    )
+    event_id: Optional[str] = Field(
+        alias="_event_id", default=str(ObjectId()), title="This is the id of the event."
     )
 
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
-            "example": {
-                "time": {
-                    "startDateTime": "2024-03-01T12:00:00-05:00",
-                    "endDateTime": "2024-03-01T13:00:00-05:00",
-                },
-                "place": {"address": "123 Main St, Louisville, KY 40202"},
-            }
-        }
-
-    def get_event_forecast(self) -> dict:  # TODO: break this into smaller methods
-
+    def get_event_forecast(self) -> dict:
         r = requests.get(
             f"https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast/hourly"
         )
@@ -292,44 +272,47 @@ class Event:
 
         self.forecast = period_forecast
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self.get_event_forecast()
 
-
-@dataclass
-class Subscription:
-    subscriber: Subscriber
-    events: list[Event]
-
     class Config:
+        populate_by_alias = True
         json_schema_extra = {
             "example": {
-                "subscriber": "{...}",
-                "events": [
-                    "{...}",
-                    "{...}"
-                ]
+                "time": {
+                    "startDateTime": "2024-03-01T12:00:00-05:00",
+                    "endDateTime": "2024-03-01T13:00:00-05:00"
+                },
+                "place": {
+                    "address": "123 Main St, Louisville, KY 40202"
+                },
             }
         }
 
 
-# @dataclasses.dataclass
-# class EventUpdate(Event): # WIP
-#     time: Time
-#     place: Place
-#     forecast: Optional[object] = dataclasses.field(
-#         default=None,
-#         metadata=dict(title='This is the forecast of an event.')
-#     )
-#     subscriber: Subscriber
+class Subscription(BaseModel):
+    subscriber: Subscriber
+    events: List[Event]
+    event_id: Optional[str] = Field(
+        alias="_event_id", default=None, title="This is the id of the subscription."
+    )
 
-#     class Config:
-#         json_schema_extra = {
-#             "example": {
-#                 "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-#                 "time": "{...}",
-#                 "place": "{...}",
-#                 "forecast": "{...}",
-#                 "subscriber": "{...}"
-#             }
-#         }
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "subscriber": {
+                    "phone": "555-555-5555"
+                },
+                "events": [
+                    {
+                        "time": {
+                            "startDateTime": "2024-03-01T12:00:00-05:00",
+                            "endDateTime": "2024-03-01T13:00:00-05:00"
+                        },
+                        "place": {
+                            "address": "123 Main St, Louisville, KY 40202"
+                        }
+                    }
+                ]
+            }
+        }
