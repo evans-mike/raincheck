@@ -133,7 +133,7 @@ class Subscriber(BaseModel):
             "example": {
                 "phone": "555-555-5555",
             }
-        }   
+        }
 
 
 class Time(BaseModel):
@@ -157,11 +157,7 @@ class Time(BaseModel):
 
     class Config:
         populate_by_name = True
-        json_schema_extra = {
-            "example": {
-                "startDateTime": "2024-03-01T12:00:00-05:00"
-            }
-        }
+        json_schema_extra = {"example": {"startDateTime": "2024-03-01T12:00:00-05:00"}}
 
     def validate_start_end_times(self):
         if self.endDateTime and dateutil.parser.parse(
@@ -270,9 +266,7 @@ class Place(BaseModel):
     class Config:
         populate_by_name = True
         json_schema_extra = {
-            "example": {
-                "address": "123 Main St, Louisville, KY 40202"
-            }
+            "example": {"address": "123 Main St, Louisville, KY 40202"}
         }
 
     def get_lat_lon_for_address(self):
@@ -327,7 +321,6 @@ class Event(BaseModel):
         self.forecast = {}
         self.forecast["raw"] = period_forecast
 
-
     def summarize_forecast(self):
         summary = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -355,9 +348,7 @@ class Subscription(BaseModel):
         populate_by_name = True
         json_schema_extra = {
             "example": {
-                "subscriber": {
-                    "phone": "555-555-5555"
-                },
+                "subscriber": {"phone": "555-555-5555"},
                 "events": [
                     {
                         "time": {
