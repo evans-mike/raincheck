@@ -1,5 +1,6 @@
 from typing import Optional
 import dataclasses
+from pydantic import BaseModel, Field
 from pydantic.dataclasses import dataclass
 import urllib.parse
 from functools import lru_cache
@@ -42,18 +43,26 @@ openai_client = OpenAI(
                     "gridY": 86
                 },
                 "forecast": {
-                    "number": 1,
-                    "name": "This is the forecast of an event.",
-                    "startTime": "2024-03-01T12:00:00-05:00",
-                    "endTime": "2024-03-01T13:00:00-05:00",
-                    "isDaytime": True,
-                    "temperature": 60,
-                    "temperatureUnit": "F",
-                    "windSpeed": "5 mph",
-                    "windDirection": "SW",
-                    "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
-                    "shortForecast": "Sunny",
-                    "detailedForecast": "This is the detailed forecast of an event."
+                    "raw": {
+                        "number": 1,
+                        "name": "This is the forecast of an event.",
+                        "startTime": "2024-03-01T12:00:00-05:00",
+                        "endTime": "2024-03-01T13:00:00-05:00",
+                        "isDaytime": True,
+                        "temperature": 60,
+                        "temperatureUnit": "F",
+                        "windSpeed": "5 mph",
+                        "windDirection": "SW",
+                        "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                        "shortForecast": "Sunny",
+                        "detailedForecast": "This is the detailed forecast of an event."
+                    },
+                    "summary": {
+                        "content": "Expect showers and thunderstorms for your event with a high of 66°F and 83% chance of rain. Winds from the south at 10 mph. Stay dry and prepare for wet conditions!",
+                        "role": "assistant",
+                        "function_call": null,
+                        "tool_calls": null
+                    }
                 }
             },
             {
@@ -130,16 +139,15 @@ class Subscriber:
         }
 
 
-@dataclass
-class Time:
-    startDateTime: str = dataclasses.field(
+class Time(BaseModel):
+    startDateTime: str = Field(
         default=datetime.datetime.now(
             datetime.timezone(datetime.timedelta(hours=-5), "EST")
         )
         + datetime.timedelta(days=1),
         metadata=dict(title="This is the startDateTime of an event."),
     )
-    endDateTime: Optional[str] = dataclasses.field(
+    endDateTime: Optional[str] = Field(
         default=datetime.datetime.now(
             datetime.timezone(datetime.timedelta(hours=-5), "EST")
         )
@@ -149,6 +157,13 @@ class Time:
             description="This is not required.",
         ),
     )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "startDateTime": "2024-03-01T12:00:00-05:00"
+            }
+        }
 
     def validate_start_end_times(self):
         if self.endDateTime and dateutil.parser.parse(
@@ -162,7 +177,7 @@ class Time:
         ):
             raise ValueError("The startDateTime must be in the future.")
 
-    def __post_init__(self):
+    def model_post_init(self, *args, **kwargs):
         self.validate_start_end_times()
         self.validate_future_start_time()
 
