@@ -1,6 +1,6 @@
 from typing import Optional
 import dataclasses
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from pydantic.dataclasses import dataclass
 import urllib.parse
 from functools import lru_cache
@@ -57,7 +57,7 @@ openai_client = OpenAI(
                         "shortForecast": "Sunny",
                         "detailedForecast": "This is the detailed forecast of an event."
                     },
-                    "summary": {
+                    "chatgpt_chatgpt_summary": {
                         "content": "Expect showers and thunderstorms for your event with a high of 66°F and 83% chance of rain. Winds from the south at 10 mph. Stay dry and prepare for wet conditions!",
                         "role": "assistant",
                         "function_call": null,
@@ -100,27 +100,26 @@ openai_client = OpenAI(
 """
 
 
-@dataclass
-class Subscriber:
-    phone: str = dataclasses.field(
+class Subscriber(BaseModel):
+    phone: str = Field(
         default="555-555-5555",
         metadata=dict(title="This is the phone number of a Subscriber."),
     )
-    email: Optional[str] = dataclasses.field(
+    email: Optional[EmailStr] = Field(
         default=None,
         metadata=dict(
             title="This is the email of a Subscriber.",
             description="This is not required.",
         ),
     )
-    alert_texts: Optional[bool] = dataclasses.field(
+    alert_texts: Optional[bool] = Field(
         default=True,
         metadata=dict(
             title="This is whether the subscriber wants to receive text messages.",
             description="This is not requried.",
         ),
     )
-    alert_emails: Optional[bool] = dataclasses.field(
+    alert_emails: Optional[bool] = Field(
         default=False,
         metadata=dict(
             title="This is whether the subscriber wants to receive emails.",
@@ -129,14 +128,12 @@ class Subscriber:
     )
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "phone": "555-555-5555",
-                "email": ",",
-                "alert_texts": True,
-                "alert_emails": False,
             }
-        }
+        }   
 
 
 class Time(BaseModel):
@@ -159,6 +156,7 @@ class Time(BaseModel):
     )
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "startDateTime": "2024-03-01T12:00:00-05:00"
@@ -228,47 +226,54 @@ def _get_gridpoints_by_lat_lon(lat: float, lon: float) -> tuple[str, int, int]:
     return gridId, gridX, gridY
 
 
-@dataclass
-class Place:
-    address: str = dataclasses.field(
+class Place(BaseModel):
+    address: str = Field(
         default="123 W Main St, Louisville, KY 40202",
         metadata=dict(title="This is the address of a Place of an event."),
     )
-    lat: Optional[float] = dataclasses.field(
+    lat: Optional[float] = Field(
         default=None,
         metadata=dict(
             title="This is the latitude of a Place of an event.",
             description="This is not required.",
         ),
     )
-    lon: Optional[float] = dataclasses.field(
+    lon: Optional[float] = Field(
         default=None,
         metadata=dict(
             title="This is the longitude of a Place of an event.",
             description="This is not requried.",
         ),
     )
-    gridId: Optional[str] = dataclasses.field(
+    gridId: Optional[str] = Field(
         default=None,
         metadata=dict(
             title="This is the gridId of a Place of an event.",
             description="This is not requried.",
         ),
     )
-    gridX: Optional[int] = dataclasses.field(
+    gridX: Optional[int] = Field(
         default=None,
         metadata=dict(
             title="This is the gridX of a Place of an event.",
             description="This is not requried.",
         ),
     )
-    gridY: Optional[int] = dataclasses.field(
+    gridY: Optional[int] = Field(
         default=None,
         metadata=dict(
             title="This is the gridY of a Place of an event.",
             description="This is not required.",
         ),
     )
+
+    class Config:
+        populate_by_name = True
+        json_schema_extra = {
+            "example": {
+                "address": "123 Main St, Louisville, KY 40202"
+            }
+        }
 
     def get_lat_lon_for_address(self):
         self.lat, self.lon = _get_lat_lon_for_address_here(self.address)
@@ -278,39 +283,15 @@ class Place:
             self.lat, self.lon
         )
 
-    def __post_init__(self):
+    def model_post_init(self, *args, **kwargs):
         self.get_lat_lon_for_address()
         self.get_gridpoints_by_lat_lon()
 
 
-# @dataclasses.dataclass
-# class Notification(Subscriber):
-
-#     subscribed_texts: Optional[bool] = dataclasses.field(
-#         default=True,
-#         metadata=dict(title='This is whether the subscriber wants to receive text messages.', description='This is not requried.')
-#     )
-#     subscribed_emails: Optional[bool] = dataclasses.field(
-#         default=False,
-#         metadata=dict(title='This is whether the subscriber wants to receive emails.', description='This is not requried.')
-#     )
-
-#     class Config:
-#         json_schema_extra = {
-#             "example": {
-#                 "phone": "555-555-5555",
-#                 "email": "someperson@raincheck.com",
-#                 "subscribed_texts": True,
-#                 "subscribed_emails": False
-#             }
-#         }
-
-
-@dataclass
-class Event:
+class Event(BaseModel):
     time: Time
     place: Place
-    forecast: Optional[object] = dataclasses.field(
+    forecast: Optional[object] = Field(
         default=None, metadata=dict(title="This is the forecast of an event.")
     )
 
@@ -320,13 +301,12 @@ class Event:
             "example": {
                 "time": {
                     "startDateTime": "2024-03-01T12:00:00-05:00",
-                    "endDateTime": "2024-03-01T13:00:00-05:00",
                 },
                 "place": {"address": "123 Main St, Louisville, KY 40202"},
             }
         }
 
-    def get_event_forecast(self) -> dict:  # TODO: break this into smaller methods
+    def get_hourly_forecast(self) -> dict:  # TODO: break this into smaller methods
 
         r = requests.get(
             f"https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast/hourly"
@@ -347,52 +327,44 @@ class Event:
         self.forecast = {}
         self.forecast["raw"] = period_forecast
 
+
     def summarize_forecast(self):
         summary = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
+            max_tokens=250,
             messages=[
                 {
                     "role": "function",
                     "name": "summarize_forecast",
-                    "content": f"Summarize the weather forecast in casual language addressing 'your calendar event' under 250 characters: {self.forecast['raw']}",
+                    "content": f"Summarize the weather forecast in casual language addressing second person singular under 250 characters: {self.forecast['raw'], self.time}",
                 }
             ],
         )
-        self.forecast["summary"] = summary.choices[0].message
+        self.forecast["chatgpt_summary"] = summary.choices[0].message
 
-    def __post_init__(self):
-        self.get_event_forecast()
+    def model_post_init(self, *args, **kwargs):
+        self.get_hourly_forecast()
         self.summarize_forecast()
 
 
-@dataclass
-class Subscription:
+class Subscription(BaseModel):
     subscriber: Subscriber
     events: list[Event]
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
-            "example": {"subscriber": "{...}", "events": ["{...}", "{...}"]}
+            "example": {
+                "subscriber": {
+                    "phone": "555-555-5555"
+                },
+                "events": [
+                    {
+                        "time": {
+                            "startDateTime": "2024-03-01T12:00:00-05:00",
+                        },
+                        "place": {"address": "123 Main St, Louisville, KY 40202"},
+                    }
+                ],
+            }
         }
-
-
-# @dataclasses.dataclass
-# class EventUpdate(Event): # WIP
-#     time: Time
-#     place: Place
-#     forecast: Optional[object] = dataclasses.field(
-#         default=None,
-#         metadata=dict(title='This is the forecast of an event.')
-#     )
-#     subscriber: Subscriber
-
-#     class Config:
-#         json_schema_extra = {
-#             "example": {
-#                 "_id": "066de609-b04a-4b30-b46c-32537c7f1f6e",
-#                 "time": "{...}",
-#                 "place": "{...}",
-#                 "forecast": "{...}",
-#                 "subscriber": "{...}"
-#             }
-#         }
