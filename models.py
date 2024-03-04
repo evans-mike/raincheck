@@ -157,7 +157,7 @@ class Time(BaseModel):
         populate_by_name = True
         json_schema_extra = {"example": {"startDateTime": "2024-03-01T12:00:00-05:00"}}
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_start_end_times(self):
         if self.endDateTime and dateutil.parser.parse(
             self.startDateTime
@@ -165,7 +165,7 @@ class Time(BaseModel):
             raise ValueError("The startDateTime must be before the endDateTime.")
         return self
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_future_start_time(self):
         if dateutil.parser.parse(self.startDateTime) <= datetime.datetime.now(
             datetime.timezone(datetime.timedelta(-1, 68400), "EST")
