@@ -1,7 +1,5 @@
-from typing import Optional
-import dataclasses
-from pydantic import BaseModel, Field, EmailStr
-from pydantic.dataclasses import dataclass
+from typing import Optional, List
+from pydantic import BaseModel, Field, EmailStr, model_validator
 import urllib.parse
 from functools import lru_cache
 import dateutil.parser
@@ -159,21 +157,21 @@ class Time(BaseModel):
         populate_by_name = True
         json_schema_extra = {"example": {"startDateTime": "2024-03-01T12:00:00-05:00"}}
 
+    @model_validator(mode='after')
     def validate_start_end_times(self):
         if self.endDateTime and dateutil.parser.parse(
             self.startDateTime
         ) >= dateutil.parser.parse(self.endDateTime):
             raise ValueError("The startDateTime must be before the endDateTime.")
+        return self
 
+    @model_validator(mode='after')
     def validate_future_start_time(self):
         if dateutil.parser.parse(self.startDateTime) <= datetime.datetime.now(
             datetime.timezone(datetime.timedelta(-1, 68400), "EST")
         ):
             raise ValueError("The startDateTime must be in the future.")
-
-    def model_post_init(self, *args, **kwargs):
-        self.validate_start_end_times()
-        self.validate_future_start_time()
+        return self
 
 
 @lru_cache
