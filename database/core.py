@@ -22,7 +22,3 @@ class DB:
 
     def get_db(self):
         return self.database
-
-
-session = DB()
-print(session.database)
