@@ -6,10 +6,10 @@ import dateutil.parser
 import requests
 from dotenv import dotenv_values
 import datetime
+from bson.objectid import ObjectId
+from openai import OpenAI
 
 config = dotenv_values(".env")
-
-from openai import OpenAI
 
 openai_client = OpenAI(
     api_key=config["OPENAI_API_KEY"],
@@ -350,7 +350,8 @@ class Subscription(BaseModel):
                 "events": [
                     {
                         "time": {
-                            "startDateTime": "2024-03-01T12:00:00-05:00",
+                            "startDateTime": "2024-03-07T12:00:00-05:00",
+                            "endDateTime": "2024-03-08T13:00:00-05:00",
                         },
                         "place": {"address": "123 Main St, Louisville, KY 40202"},
                     }

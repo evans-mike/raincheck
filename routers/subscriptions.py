@@ -7,8 +7,18 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from models import Event, Subscriber, Subscription, Time, Place
+from database.core import DB, NotFoundError
+from database.subscriptions import (
+    create_db_subscription,
+    get_db_subscription,
+    update_db_subscription,
+    get_all_db_subscriptions,
+    delete_db_subscription,
+)
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/subscriptions",
+)
 
 
 #######auth########
@@ -33,6 +43,20 @@ router = APIRouter()
 
 
 @router.post(
+    "/subscriber",
+    response_description="Create a new subscriber",
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+    response_model=Subscription,
+)
+def create_subscriber(subscriber: Subscriber = Body(...)):
+    subscriber = jsonable_encoder(subscriber)
+    created_subscriber = Subscriber.create_subscriber(subscriber)
+    return created_subscriber
+
+
+# this one has been refactored with database.subscriptions abstract methods
+@router.post(
     "/",
     response_description="Create a new subscription",
     status_code=status.HTTP_201_CREATED,
@@ -41,12 +65,7 @@ router = APIRouter()
 def create_subscription(request: Request, subscription: Subscription = Body(...)):
 
     subscription = jsonable_encoder(subscription)
-    subscription["_id"] = str(ObjectId())
-
-    new_subscription = request.app.database["subscriptions"].insert_one(subscription)
-    created_subscription = request.app.database["subscriptions"].find_one(
-        {"_id": new_subscription.inserted_id}
-    )
+    created_subscription = create_db_subscription(subscription)
     return created_subscription
 
 
