@@ -43,17 +43,6 @@ def update_db_subscriber_by_id(subscription_id: str, subscriber: Subscriber):
     return subscriber
 
 
-def update_db_subscriber_by_phone(phone: str, subscriber: Subscriber):
-    subscription = db.database.subscriptions.find_one({"subscriber.phone": phone})
-    if subscription is None:
-        raise NotFoundError(f"Subscription with phone {phone} not found")
-    subscription["subscriber"] = subscriber
-    db.database.subscriptions.update_one(
-        {"subscriber.phone": phone}, {"$set": subscription}
-    )
-    return subscriber
-
-
 def get_all_db_subscribers():
     subscriptions = db.database.subscriptions.find(
         {"subscriber": {"$exists": "true"}}, {"subscriber": "true"}

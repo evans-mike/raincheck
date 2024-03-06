@@ -13,7 +13,6 @@ from database.subscribers import (
     get_db_subscriber_by_id,
     get_db_subscriber_by_phone,
     update_db_subscriber_by_id,
-    update_db_subscriber_by_phone,
     get_all_db_subscribers,
 )
 
@@ -66,18 +65,6 @@ def update_subscriber(subscriber_id: str, subscriber: Subscriber = Body(...)):
     return updated_subscriber
 
 
-@router.put(
-    "/phone/{phone}",
-    response_description="Update subscriber by phone",
-    response_model=Subscriber,
-)
-def update_subscriber_by_phone(phone: str, subscriber: Subscriber = Body(...)):
-    subscriber = jsonable_encoder(subscriber)
-    updated_subscriber = update_db_subscriber_by_phone(phone, subscriber)
-    return updated_subscriber
-
-
-# GET all subscribers
 @router.get(
     "/",
     response_description="Get all subscribers",
