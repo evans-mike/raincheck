@@ -14,6 +14,7 @@ from database.subscribers import (
     get_db_subscriber_by_phone,
     update_db_subscriber_by_id,
     update_db_subscriber_by_phone,
+    get_all_db_subscribers,
 )
 
 router = APIRouter(
@@ -74,3 +75,14 @@ def update_subscriber_by_phone(phone: str, subscriber: Subscriber = Body(...)):
     subscriber = jsonable_encoder(subscriber)
     updated_subscriber = update_db_subscriber_by_phone(phone, subscriber)
     return updated_subscriber
+
+
+# GET all subscribers
+@router.get(
+    "/",
+    response_description="Get all subscribers",
+    response_model=List[Subscriber],
+)
+def get_all_subscribers():
+    subscribers = get_all_db_subscribers()
+    return subscribers

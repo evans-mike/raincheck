@@ -52,3 +52,11 @@ def update_db_subscriber_by_phone(phone: str, subscriber: Subscriber):
         {"subscriber.phone": phone}, {"$set": subscription}
     )
     return subscriber
+
+
+def get_all_db_subscribers():
+    subscriptions = db.database.subscriptions.find(
+        {"subscriber": {"$exists": "true"}}, {"subscriber": "true"}
+    )
+
+    return subscriptions
