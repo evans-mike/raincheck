@@ -1,8 +1,5 @@
-from typing import Optional
-from pydantic import BaseModel
-from bson.objectid import ObjectId
 from .core import DB, NotFoundError
-from models import Event, Subscriber, Subscription, Time, Place
+from models import Event
 
 db = DB()
 

@@ -1,13 +1,7 @@
-from fastapi import APIRouter, Body, Request, Response, HTTPException, status, Depends
+from fastapi import APIRouter, Body, Request, Response, HTTPException, status
+from typing import List
 from fastapi.encoders import jsonable_encoder
-from typing import List, Annotated
-from bson.objectid import ObjectId
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-
-from models import Event, Subscriber, Subscription, Time, Place
-from database.core import DB, NotFoundError
+from models import Event
 from database.events import (
     update_db_event,
     add_db_event,
