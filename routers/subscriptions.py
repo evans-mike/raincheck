@@ -11,6 +11,7 @@ from database.core import DB, NotFoundError
 from database.subscriptions import (
     create_db_subscription,
     get_db_subscription,
+    get_db_subscription_by_phone,
     update_db_subscription,
     get_all_db_subscriptions,
     delete_db_subscription,
@@ -18,44 +19,10 @@ from database.subscriptions import (
 
 router = APIRouter(
     prefix="/subscriptions",
+    tags=["Subscriptions"],
 )
 
 
-#######auth########
-
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# def fake_decode_token(token):
-#     return User(
-#         username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
-#     )
-
-# async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-#     user = fake_decode_token(token)
-#     return user
-
-
-# @router.get("/users/me")
-# async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
-#     return current_user
-
-##############
-
-
-@router.post(
-    "/subscriber",
-    response_description="Create a new subscriber",
-    status_code=status.HTTP_201_CREATED,
-    response_model_by_alias=False,
-    response_model=Subscription,
-)
-def create_subscriber(subscriber: Subscriber = Body(...)):
-    subscriber = jsonable_encoder(subscriber)
-    created_subscriber = Subscriber.create_subscriber(subscriber)
-    return created_subscriber
-
-
-# this one has been refactored with database.subscriptions abstract methods
 @router.post(
     "/",
     response_description="Create a new subscription",
@@ -69,73 +36,153 @@ def create_subscription(request: Request, subscription: Subscription = Body(...)
     return created_subscription
 
 
-@router.post(
-    "/{id}/event",
-    response_description="Create a new subscriber event",
-    status_code=status.HTTP_201_CREATED,
-    # response_model=Event, # WIP: would like to enforce a response model
-)
-def create_event(request: Request, id: str, body: Event = Body(...)):
-
-    result = request.app.database["subscriptions"].find_one({"_id": id})
-    body = jsonable_encoder(body)
-    body["_event_id"] = str(ObjectId())
-
-    request.app.database["subscriptions"].update_one(
-        {"_id": id}, {"$push": {"events": body}}
-    )
-
-    if (
-        result := request.app.database["subscriptions"].find_one(
-            {"events": {"$elemMatch": {"_event_id": body["_event_id"]}}},
-            {"events.$": 1},
-        )
-    ) is not None:
-        return result
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Event with ID {body['_event_id']} not found",
-    )
-
-
 @router.get(
-    "/{id}/events",
-    response_description="Get events by subscriber_id",
-    # response_model=List[Event], # WIP: would like to enforce a response model
+    "/{id}",
+    response_description="Get subscription by id",
+    status_code=status.HTTP_200_OK,
+    response_model=Subscription,
 )
-def fetch_subscriber_events(id: str, request: Request):
+def get_subscription(request: Request, id: str):
 
-    if (
-        result := request.app.database["subscriptions"].find_one(
-            {"_id": id}, {"events": 1}
-        )
-    ) is not None:
-        return result
+    if (subscription := get_db_subscription(id)) is not None:
+        return subscription
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Subscription with ID {id} not found",
     )
 
 
-# PUT endpoint for updating an event
-@router.put(
-    "/{id}/event/{event_id}",
-    response_description="Update an event",
-    response_model=Event,
+@router.get(
+    "/phone/{phone}",
+    response_description="Get subscription by phone number",
+    status_code=status.HTTP_200_OK,
+    response_model=Subscription,
 )
-def update_event(id: str, event_id: str, request: Request, event: Event = Body(...)):
+def get_subscription_by_phone(request: Request, phone: str):
 
-    updated_event = request.app.database["subscriptions"].update_one(
-        {"_id": id, "events._event_id": event_id}, {"$set": {"events.$": event}}
+    if (subscription := get_db_subscription_by_phone(phone)) is not None:
+        return subscription
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Subscription with phone {phone} not found",
     )
-    if updated_event.modified_count == 0:
+
+
+@router.put(
+    "/{id}",
+    response_description="Update a subscription",
+    status_code=status.HTTP_200_OK,
+    response_model=Subscription,
+)
+def update_subscription(
+    id: str, request: Request, subscription: Subscription = Body(...)
+):
+    subscription = jsonable_encoder(subscription)
+    updated_subscription = update_db_subscription(id, subscription)
+    if updated_subscription:
+        return updated_subscription
+    else:
         raise HTTPException(
-            status_code=404, detail=f"Event with id {event_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Subscription with ID {id} not found",
         )
 
-    return request.app.database["subscriptions"].find_one(
-        {"_id": id, "events._event_id": event_id}, {"events.$": 1}
+
+@router.get(
+    "/",
+    response_description="List all subscriptions",
+    status_code=status.HTTP_200_OK,
+    response_model=List[Subscription],
+)
+def get_all_subscriptions(request: Request):
+
+    subscriptions = get_all_db_subscriptions()
+    return subscriptions
+
+
+@router.delete(
+    "/{id}",
+    response_description="Delete a subscription",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_subscription(id: str, request: Request):
+
+    deleted_subscription = delete_db_subscription(id)
+    if deleted_subscription:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Subscription with ID {id} not found",
     )
+
+
+# @router.post(
+#     "/{id}/event",
+#     response_description="Create a new subscriber event",
+#     status_code=status.HTTP_201_CREATED,
+#     # response_model=Event, # WIP: would like to enforce a response model
+# )
+# def create_event(request: Request, id: str, body: Event = Body(...)):
+
+#     result = request.app.database["subscriptions"].find_one({"_id": id})
+#     body = jsonable_encoder(body)
+#     body["_event_id"] = str(ObjectId())
+
+#     request.app.database["subscriptions"].update_one(
+#         {"_id": id}, {"$push": {"events": body}}
+#     )
+
+#     if (
+#         result := request.app.database["subscriptions"].find_one(
+#             {"events": {"$elemMatch": {"_event_id": body["_event_id"]}}},
+#             {"events.$": 1},
+#         )
+#     ) is not None:
+#         return result
+#     raise HTTPException(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         detail=f"Event with ID {body['_event_id']} not found",
+#     )
+
+
+# @router.get(
+#     "/{id}/events",
+#     response_description="Get events by subscriber_id",
+#     # response_model=List[Event], # WIP: would like to enforce a response model
+# )
+# def fetch_subscriber_events(id: str, request: Request):
+
+#     if (
+#         result := request.app.database["subscriptions"].find_one(
+#             {"_id": id}, {"events": 1}
+#         )
+#     ) is not None:
+#         return result
+#     raise HTTPException(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         detail=f"Subscription with ID {id} not found",
+#     )
+
+
+# PUT endpoint for updating an event
+# @router.put(
+#     "/{id}/event/{event_id}",
+#     response_description="Update an event",
+#     response_model=Event,
+# )
+# def update_event(id: str, event_id: str, request: Request, event: Event = Body(...)):
+
+#     updated_event = request.app.database["subscriptions"].update_one(
+#         {"_id": id, "events._event_id": event_id}, {"$set": {"events.$": event}}
+#     )
+#     if updated_event.modified_count == 0:
+#         raise HTTPException(
+#             status_code=404, detail=f"Event with id {event_id} not found"
+#         )
+
+#     return request.app.database["subscriptions"].find_one(
+#         {"_id": id, "events._event_id": event_id}, {"events.$": 1}
+#     )
 
 
 # @router.delete("/event/{id}", response_description="Delete a event")
