@@ -43,7 +43,7 @@ def update_db_subscriber_by_id(subscription_id: str, subscriber: Subscriber):
     return subscriber
 
 
-def get_all_db_subscribers():
+def get_all_db_subscribers():  # FAILED database.core.NotFoundError: Subscription all not found
     subscriptions = db.database.subscriptions.find(
         {"subscriber": {"$exists": "true"}}, {"subscriber": "true"}
     )

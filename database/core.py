@@ -25,6 +25,7 @@ class DB:
         if self.database.get_collection("subscriptions") == None:
             self.database.create_collection("subscriptions")
             self.database.subscriptions.create_index("subscriber.phone", unique=True)
+            self.database.subscriptions.create_index("event.event_id", unique=True)
             print("Database created.")
         return self.database.subscriptions
 

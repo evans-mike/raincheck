@@ -17,7 +17,7 @@ from database.subscribers import (
 )
 
 router = APIRouter(
-    prefix="/subscribers",
+    prefix="/subscriber",
     tags=["Subscribers"],
 )
 
@@ -35,12 +35,12 @@ def create_subscriber(request: Request, subscriber: Subscriber = Body(...)):
 
 
 @router.get(
-    "/{subscriber_id}",
+    "/{subscription_id}",
     response_description="Get subscriber by ID",
     response_model=Subscriber,
 )
-def get_subscriber(subscriber_id: str):
-    subscriber = get_db_subscriber_by_id(subscriber_id)
+def get_subscriber(subscription_id: str):
+    subscriber = get_db_subscriber_by_id(subscription_id)
     return subscriber
 
 
@@ -65,8 +65,8 @@ def update_subscriber(subscriber_id: str, subscriber: Subscriber = Body(...)):
     return updated_subscriber
 
 
-@router.get(
-    "/",
+@router.get(  # FAILED database.core.NotFoundError: Subscription all not found
+    "/all",
     response_description="Get all subscribers",
     response_model=List[Subscriber],
 )

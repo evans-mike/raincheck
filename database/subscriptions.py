@@ -33,16 +33,7 @@ def get_db_subscription_by_phone(phone: str):
     return subscription
 
 
-def update_db_subscription(subscription_id: str, subscription: Subscription):
-    result = db.database.subscriptions.update_one
-    (
-        {"_id": subscription_id},
-        {"$set": subscription},
-    )
-    return subscription
-
-
-def get_all_db_subscriptions():
+def get_all_db_subscriptions():  # FAILED database.core.NotFoundError: Subscription all not found
     subscriptions = db.database.subscriptions.find()
     return subscriptions
 
