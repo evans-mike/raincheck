@@ -174,13 +174,14 @@ class Time(BaseModel):
         return self
 
 
+# TODO: Move this into a separate Tools module
 @lru_cache
 def _get_lat_lon_for_address_google(address_str: str) -> tuple[float, float]:
 
     address_encoded = urllib.parse.quote_plus(address_str)
 
     r = requests.get(
-        f'https://maps.googleapis.com/maps/api/geocode/json?address={address_encoded}&key={config["GOOGLE_API_KEY"]}'
+        f'https://maps.googleapis.com/maps/api/geocode/json?key={config["GOOGLE_API_KEY"]}&address={address_encoded}'
     )
     r.raise_for_status()
     if r.json()["status"] == "ZERO_RESULTS":
