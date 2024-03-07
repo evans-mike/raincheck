@@ -254,6 +254,44 @@ class Event(BaseModel):
             }
         }
 
+    # def get_forecast_more_than_7_day(self):
+    #     """
+    #     If the event start time is beyond the last forecast period, return a message that the event is saved but the forecast is not available yet.
+    #     """
+    #     if dateutil.parser.parse(self.time.startDateTime) > (
+    #         datetime.datetime.now() + datetime.timedelta(days=7)
+    #     ):
+    #         self.forecast = {
+    #             "message": "The event is saved but the forecast is not available yet."
+    #         }
+
+    # def get_forecast_4_to_7_day(self):
+    #     """
+    #     If the event start time is within 96 hours to 7 days from now, return the full day forecast for the event day from f"https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast" and include the isDaytime==True and isDaytime==False periods in the forecast to describe the weather for the event day.
+    #     """
+    #     if (
+    #         datetime.datetime.now() + datetime.timedelta(hours=96)
+    #     ) < dateutil.parser.parse(self.time.startDateTime) and dateutil.parser.parse(self.time.startDateTime) > (
+    #         datetime.datetime.now() + datetime.timedelta(days=7)
+    #     ):
+    #         r = requests.get(
+    #             f"https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast"
+    #         )
+    #         r.raise_for_status()
+    #         self.forecast = []
+    #         forecast = r.json()["properties"]["periods"]
+    #         event_time = dateutil.parser.parse(self.time.startDateTime)
+    #         for period_forecast in forecast:
+    #             start_time = dateutil.parser.parse(period_forecast["startTime"])
+    #             end_time = dateutil.parser.parse(period_forecast["endTime"])
+    #             if event_time >= start_time and event_time <= end_time:
+    #                 self.forecast.append(period_forecast)
+
+    # def get_forecast_0_to_3_day(self):
+    #     """
+    #     If the event start time is within 0-96 hours from now, return the hourly forecast for the event day from f"https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast/hourly" and return the specific periods within the event start and end times. Summary should breakdown the hourly forecast for each hour within the event start and end times.
+    #     """
+
     def get_hourly_forecast(self) -> dict:  # TODO: break this into smaller methods
 
         r = requests.get(

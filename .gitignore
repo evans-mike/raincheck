@@ -5,3 +5,5 @@ period_forecast.json
 points.json
 .venv
 test.py
+forecast.json
+forecast_hourly.json
