@@ -59,6 +59,20 @@ config = dotenv_values(".env")
                         "shortForecast": "Sunny",
                         "detailedForecast": "This is the detailed forecast of an event."
                     },
+                    "raw_filtered": {
+                        "number": 1,
+                        "name": "This is the forecast of an event.",
+                        "startTime": "2024-03-01T12:00:00-05:00",
+                        "endTime": "2024-03-01T13:00:00-05:00",
+                        "isDaytime": True,
+                        "temperature": 60,
+                        "temperatureUnit": "F",
+                        "windSpeed": "5 mph",
+                        "windDirection": "SW",
+                        "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                        "shortForecast": "Sunny",
+                        "detailedForecast": "This is the detailed forecast of an event."
+                    },
                     "chatgpt_chatgpt_summary": {
                         "content": "Expect showers and thunderstorms for your event with a high of 66°F and 83% chance of rain. Winds from the south at 10 mph. Stay dry and prepare for wet conditions!",
                         "role": "assistant",
@@ -82,18 +96,40 @@ config = dotenv_values(".env")
                     "gridY": 86
                 },
                 "forecast": {
-                    "number": 1,
-                    "name": "This is the forecast of an event.",
-                    "startTime": "2024-03-01T12:00:00-05:00",
-                    "endTime": "2024-03-01T13:00:00-05:00",
-                    "isDaytime": True,
-                    "temperature": 60,
-                    "temperatureUnit": "F",
-                    "windSpeed": "5 mph",
-                    "windDirection": "SW",
-                    "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
-                    "shortForecast": "Sunny",
-                    "detailedForecast": "This is the detailed forecast of an event."
+                    "raw": {
+                        "number": 1,
+                        "name": "This is the forecast of an event.",
+                        "startTime": "2024-03-01T12:00:00-05:00",
+                        "endTime": "2024-03-01T13:00:00-05:00",
+                        "isDaytime": True,
+                        "temperature": 60,
+                        "temperatureUnit": "F",
+                        "windSpeed": "5 mph",
+                        "windDirection": "SW",
+                        "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                        "shortForecast": "Sunny",
+                        "detailedForecast": "This is the detailed forecast of an event."
+                    },
+                    "raw_filtered": {
+                        "number": 1,
+                        "name": "This is the forecast of an event.",
+                        "startTime": "2024-03-01T12:00:00-05:00",
+                        "endTime": "2024-03-01T13:00:00-05:00",
+                        "isDaytime": True,
+                        "temperature": 60,
+                        "temperatureUnit": "F",
+                        "windSpeed": "5 mph",
+                        "windDirection": "SW",
+                        "icon": "https://api.weather.gov/icons/land/day/sct?size=small",
+                        "shortForecast": "Sunny",
+                        "detailedForecast": "This is the detailed forecast of an event."
+                    },
+                    "chatgpt_chatgpt_summary": {
+                        "content": "Expect showers and thunderstorms for your event with a high of 66°F and 83% chance of rain. Winds from the south at 10 mph. Stay dry and prepare for wet conditions!",
+                        "role": "assistant",
+                        "function_call": null,
+                        "tool_calls": null
+                    }
                 }
             }
         ]
