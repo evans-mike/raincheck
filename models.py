@@ -5,17 +5,19 @@ import requests
 from dotenv import dotenv_values
 import datetime
 from bson.objectid import ObjectId
-from openai import OpenAI
+
+# from openai import OpenAI
 from tools.place_utilities import (
     _get_lat_lon_for_address_here,
     _get_gridpoints_by_lat_lon,
 )
+from tools.forecast_utilities import Forecast
 
 config = dotenv_values(".env")
 
-openai_client = OpenAI(
-    api_key=config["OPENAI_API_KEY"],
-)
+# openai_client = OpenAI(
+#     api_key=config["OPENAI_API_KEY"],
+# )
 
 """
 "subscriptions": [
@@ -249,87 +251,11 @@ class Event(BaseModel):
             "example": {
                 "time": {
                     "startDateTime": "2024-03-01T12:00:00-05:00",
+                    "endDateTime": "2024-03-01T13:00:00-05:00",
                 },
                 "place": {"address": "123 Main St, Louisville, KY 40202"},
             }
         }
-
-    # def get_forecast_more_than_7_day(self):
-    #     """
-    #     If the event start time is beyond the last forecast period, return a message that the event is saved but the forecast is not available yet.
-    #     """
-    #     if dateutil.parser.parse(self.time.startDateTime) > (
-    #         datetime.datetime.now() + datetime.timedelta(days=7)
-    #     ):
-    #         self.forecast = {
-    #             "message": "The event is saved but the forecast is not available yet."
-    #         }
-
-    # def get_forecast_4_to_7_day(self):
-    #     """
-    #     If the event start time is within 96 hours to 7 days from now, return the full day forecast for the event day from f"https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast" and include the isDaytime==True and isDaytime==False periods in the forecast to describe the weather for the event day.
-    #     """
-    #     if (
-    #         datetime.datetime.now() + datetime.timedelta(hours=96)
-    #     ) < dateutil.parser.parse(self.time.startDateTime) and dateutil.parser.parse(self.time.startDateTime) > (
-    #         datetime.datetime.now() + datetime.timedelta(days=7)
-    #     ):
-    #         r = requests.get(
-    #             f"https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast"
-    #         )
-    #         r.raise_for_status()
-    #         self.forecast = []
-    #         forecast = r.json()["properties"]["periods"]
-    #         event_time = dateutil.parser.parse(self.time.startDateTime)
-    #         for period_forecast in forecast:
-    #             start_time = dateutil.parser.parse(period_forecast["startTime"])
-    #             end_time = dateutil.parser.parse(period_forecast["endTime"])
-    #             if event_time >= start_time and event_time <= end_time:
-    #                 self.forecast.append(period_forecast)
-
-    # def get_forecast_0_to_3_day(self):
-    #     """
-    #     If the event start time is within 0-96 hours from now, return the hourly forecast for the event day from f"https://api.weather.gov/gridpoints/{gridId}/{gridX},{gridY}/forecast/hourly" and return the specific periods within the event start and end times. Summary should breakdown the hourly forecast for each hour within the event start and end times.
-    #     """
-
-    def get_hourly_forecast(self) -> dict:  # TODO: break this into smaller methods
-
-        r = requests.get(
-            f"https://api.weather.gov/gridpoints/{self.place.gridId}/{self.place.gridX},{self.place.gridY}/forecast/hourly"
-        )
-        r.raise_for_status()
-
-        forecast = r.json()["properties"]["periods"]
-
-        event_time = dateutil.parser.parse(self.time.startDateTime)
-
-        for period_forecast in forecast:
-            start_time = dateutil.parser.parse(period_forecast["startTime"])
-            end_time = dateutil.parser.parse(period_forecast["endTime"])
-
-            if event_time >= start_time and event_time <= end_time:
-                break
-
-        self.forecast = {}
-        self.forecast["raw"] = period_forecast
-
-    def summarize_forecast(self):
-        summary = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            max_tokens=250,
-            messages=[
-                {
-                    "role": "function",
-                    "name": "summarize_forecast",
-                    "content": f"Summarize the weather forecast in casual language addressing second person singular under 250 characters: {self.forecast['raw'], self.time}",
-                }
-            ],
-        )
-        self.forecast["chatgpt_summary"] = summary.choices[0].message
-
-    def model_post_init(self, *args, **kwargs):
-        self.get_hourly_forecast()
-        self.summarize_forecast()
 
 
 class Subscription(BaseModel):

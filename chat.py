@@ -10,8 +10,6 @@
 
 import json
 from openai import OpenAI
-
-# import openai
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from termcolor import colored
 from dotenv import dotenv_values
