@@ -10,6 +10,7 @@ from database.events import (
     get_db_events,
     get_all_db_events,
 )
+from tools.forecast_utilities import Forecast
 
 router = APIRouter(
     prefix="",
@@ -61,6 +62,7 @@ def delete_event(request: Request, event_id: str):
 )
 def get_event(request: Request, event_id: str):
     event = get_db_event(event_id)
+    event = Forecast(event)
     return event
 
 
@@ -71,6 +73,8 @@ def get_event(request: Request, event_id: str):
 )
 def get_events(request: Request, subscription_id: str):
     events = get_db_events(subscription_id)
+    for event in events:
+        event = Forecast(event)
     return events
 
 
@@ -81,4 +85,6 @@ def get_events(request: Request, subscription_id: str):
 )
 def get_all_events(request: Request):
     events = get_all_db_events()
+    for event in events:
+        event = Forecast(event)
     return events

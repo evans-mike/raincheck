@@ -241,6 +241,10 @@ class Place(BaseModel):
 class Event(BaseModel):
     time: Time
     place: Place
+    event_id: Optional[str] = Field(
+        default=str(ObjectId()),
+        metadata=dict(title="This is the event_id of an event."),
+    )
     forecast: Optional[object] = Field(
         default=None, metadata=dict(title="This is the forecast of an event.")
     )

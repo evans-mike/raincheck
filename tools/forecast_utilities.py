@@ -66,7 +66,11 @@ class Forecast:
 
     def forecastable(self):
 
-        if dateutil.parser.parse(self.time.startDateTime) > (
+        if dateutil.parser.parse(
+            self.time.startDateTime
+        ) > datetime.datetime.now() and dateutil.parser.parse(
+            self.time.startDateTime
+        ) > (
             datetime.datetime.now() + datetime.timedelta(days=7)
         ):
             return False
