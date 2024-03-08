@@ -1,24 +1,15 @@
 from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr, model_validator
 import dateutil.parser
-import requests
 from dotenv import dotenv_values
 import datetime
 from bson.objectid import ObjectId
-
-# from openai import OpenAI
 from tools.place_utilities import (
     _get_lat_lon_for_address_here,
     _get_gridpoints_by_lat_lon,
 )
-from tools.forecast_utilities import Forecast
 
 config = dotenv_values(".env")
-
-# openai_client = OpenAI(
-#     api_key=config["OPENAI_API_KEY"],
-# )
-
 """
 "subscriptions": [
     {
