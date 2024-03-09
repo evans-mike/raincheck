@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
+from models import Event
 from database.events import (
     update_db_event,
     add_db_event,
@@ -12,14 +13,16 @@ from models import Event
 
 
 class TestEvents(unittest.TestCase):
-    @patch("events.DB")
+    @patch("database.events.DB")
     def test_update_db_event(self, mock_db):
-        mock_event = Event(event_id="123", name="Test Event")
+        mock_event = Event(
+            event_id="123",
+        )
         mock_db.database.events.update_one.return_value = mock_event
         result = update_db_event("123", mock_event)
         self.assertEqual(result, mock_event)
 
-    @patch("events.DB")
+    @patch("database.events.DB")
     def test_add_db_event(self, mock_db):
         mock_event = Event(event_id="123", name="Test Event")
         mock_db.database.subscriptions.find_one.return_value = {
@@ -29,13 +32,13 @@ class TestEvents(unittest.TestCase):
         result = add_db_event("123", mock_event)
         self.assertEqual(result, mock_event)
 
-    @patch("events.DB")
+    @patch("database.events.DB")
     def test_delete_db_event(self, mock_db):
         mock_db.database.events.delete_one.return_value = MagicMock(deleted_count=1)
         result = delete_db_event("123")
         self.assertEqual(result, 1)
 
-    @patch("events.DB")
+    @patch("database.events.DB")
     def test_get_db_event(self, mock_db):
         mock_event = Event(event_id="123", name="Test Event")
         mock_db.database.events.find_one.return_value = mock_event

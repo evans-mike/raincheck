@@ -1,5 +1,4 @@
-from fastapi import FastAPI, Depends
-from dotenv import dotenv_values
+from fastapi import FastAPI
 from routers.events import router as events
 from routers.subscribers import router as subscribers
 from routers.subscriptions import router as subscriptions
