@@ -14,6 +14,29 @@ openai_client = OpenAI(
 class Forecast:
 
     def __init__(self, event):
+        """
+        Expect event to be a dictionary with the following keys:
+        - place: dictionary with keys gridId, gridX, gridY
+        - time: dictionary with keys startDateTime, endDateTime
+
+        For example:
+        {
+            "time": {
+                "startDateTime": "2024-03-01T12:00:00-05:00",
+                "endDateTime": "2024-03-01T13:00:00-05:00"
+            },
+            "place": {
+                "address": "123 Main St, Louisville, KY 40202",
+                "lat": 38.2542,
+                "lon": 85.7594,
+                "gridId": "LMK",
+                "gridX": 84,
+                "gridY": 86
+            }
+        }
+
+        """
+
         self.place = event["place"]
         self.time = event["time"]
         self.main_get_forecast()
