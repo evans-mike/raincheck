@@ -18,7 +18,7 @@ def add_db_event(subscription_id: str, event: Event):
     if subscription is None:
         raise NotFoundError(f"Subscription {subscription_id} not found")
     db.database.subscriptions.update_one(
-        {"_id": subscription_id}, {"$set": {"events": event}}
+        {"_id": subscription_id}, {"$push": {"events": event}}
     )
     return event
 
@@ -31,8 +31,8 @@ def delete_db_event(event_id: str):
 
 
 def get_db_event(event_id: str):
-    event = db.database.subscriptions.find_one({"events.event_id": event_id})
-    event = event["events"]
+    subscription = db.database.subscriptions.find_one({"events.event_id": event_id})
+    event = subscription["events"]
     if event is None:
         raise NotFoundError(f"Event {event_id} not found")
     return event
@@ -45,10 +45,3 @@ def get_db_events(
     if subscription is None:
         raise NotFoundError(f"Subscription {subscription_id} not found")
     return subscription["events"]
-
-
-def get_all_db_events():
-    events = db.database.subscriptions.find(
-        {"events": {"$exists": "true"}}, {"events": "true"}
-    )
-    return events

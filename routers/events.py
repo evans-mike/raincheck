@@ -8,7 +8,6 @@ from database.events import (
     delete_db_event,
     get_db_event,
     get_db_events,
-    get_all_db_events,
 )
 from tools.forecast_utilities import Forecast
 
@@ -73,18 +72,7 @@ def get_event(request: Request, event_id: str):
 )
 def get_events(request: Request, subscription_id: str):
     events = get_db_events(subscription_id)
-    for event in events:
-        event = Forecast(event)
-    return events
-
-
-@router.get(
-    "/events",
-    response_description="Get all events",
-    response_model=List[Event],
-)
-def get_all_events(request: Request):
-    events = get_all_db_events()
+    # Bug: Forecast is not being applied to all events
     for event in events:
         event = Forecast(event)
     return events
