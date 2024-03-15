@@ -29,8 +29,8 @@ def update_event(request: Request, event_id: str, event: Event = Body(...)):
     return updated_event
 
 
-@router.post(  # FAILED TypeError: URL is not valid or contains user credentials.
-    "{subscription_id}/event/",
+@router.post(
+    "/{subscription_id}/event/",
     response_description="Add event to subscription",
     response_model=Event,
 )
@@ -66,7 +66,7 @@ def get_event(request: Request, event_id: str):
     return event
 
 
-@router.get(  # FAILED database.core.NotFoundError: Subscription 65e8d8cc17b2e490c9c912bc not found
+@router.get(
     "/{subscription_id}/events",
     response_description="Get events by subscription ID",
     response_model=List[Event],

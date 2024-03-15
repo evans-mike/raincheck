@@ -268,7 +268,7 @@ class Place(BaseModel):
 class Event(BaseModel):
     time: Time
     place: Place
-    event_id: Optional[str] = Field(
+    event_id: str = Field(
         default=str(ObjectId()),
         metadata=dict(title="This is the event_id of an event."),
     )

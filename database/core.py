@@ -32,3 +32,7 @@ class DB:
     def __post_init__(self):
         self.database = self.client[config["DB_NAME"]]
         self.get_db()
+
+
+# TODO: add dependency injection to routes and pass a session to the database functions
+# https://pymongo.readthedocs.io/en/stable/api/pymongo/client_session.html
