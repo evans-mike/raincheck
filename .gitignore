@@ -7,3 +7,4 @@ points.json
 test.py
 forecast.json
 forecast_hourly.json
+__pycache__
