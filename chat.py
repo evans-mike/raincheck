@@ -8,6 +8,8 @@
 
 # utilize https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models
 
+# See also https://realpython.com/practical-prompt-engineering/?utm_source=notification_summary&utm_medium=email&utm_campaign=2024-03-25
+
 import json
 from openai import OpenAI
 from tenacity import retry, wait_random_exponential, stop_after_attempt
